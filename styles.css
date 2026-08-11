@@ -520,3 +520,25 @@ select { appearance:none; padding-right:38px;
 @media (prefers-reduced-motion: reduce) {
   .conv-dot, .tab.nuevo::after, .bell.on i { animation:none; }
 }
+
+/* Ofrecimiento de activar los avisos del sistema */
+.push-ask {
+  display:flex; align-items:center; gap:11px;
+  margin:10px 16px 0; padding:12px 13px;
+  background:var(--primary-soft); border:1px solid #c7d2fe;
+  border-radius:var(--r); color:var(--primary);
+  animation:subeSuave .35s var(--ease) both;
+}
+@keyframes subeSuave { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
+.push-ask > i { font-size:17px; flex-shrink:0; }
+.push-ask-t { font-size:13.5px; font-weight:700; }
+.push-ask-s { font-size:11.5px; color:var(--muted); margin-top:1px; }
+.push-si {
+  flex-shrink:0; padding:8px 14px; border:none; border-radius:10px;
+  background:var(--primary); color:#fff;
+  font-family:inherit; font-size:12.5px; font-weight:650; cursor:pointer;
+}
+.push-no {
+  flex-shrink:0; width:30px; height:30px; border:none; border-radius:9px;
+  background:none; color:var(--muted); font-size:14px; cursor:pointer;
+}

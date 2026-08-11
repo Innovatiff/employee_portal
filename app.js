@@ -19,6 +19,11 @@ firebase.initializeApp({
   appId: "1:329163319008:web:1c7d3e71252ec4f5641285",
   measurementId: "G-668H2W780D"
 });
+// Clave pública de notificaciones push (VAPID). Firebase Console →
+// Configuración del proyecto → Cloud Messaging → Certificados push web.
+// Vacía = sin avisos con la app cerrada; el resto funciona igual.
+const VAPID_KEY = "";
+
 const db   = firebase.firestore();
 const auth = firebase.auth();
 
@@ -309,4 +314,74 @@ function sinLeer(chats) {
     const t = msOf(c.lastAt);
     return t && c.lastSender !== ME.pid && t > (l[c.id] || 0);
   }).sort((a,b) => msOf(b.lastAt) - msOf(a.lastAt));
+}
+
+
+// ══ Notificaciones con la app cerrada (Firebase Cloud Messaging) ══
+//
+// Los avisos de la campana sólo existen con la app abierta. Para que
+// llegue algo al teléfono con la app cerrada: este aparato pide permiso y
+// obtiene un token, el token se guarda en PushTokens/{token} = { pid }, y
+// al escribirse un mensaje una Cloud Function manda la push a quien toca.
+// Desde aquí no se puede enviar: haría falta una credencial de servidor.
+
+async function activarPush() {
+  try {
+    if (!VAPID_KEY || !('serviceWorker' in navigator) || !('Notification' in window)
+        || !firebase.messaging) return false;
+
+    const permiso = await Notification.requestPermission();
+    if (permiso !== 'granted') return false;
+
+    const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    const messaging = firebase.messaging();
+    const token = await messaging.getToken({
+      vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (!token) return false;
+
+    await db.collection('PushTokens').doc(token).set({
+      pid: ME.pid, name: ME.name,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge:true });
+
+    // Con la app abierta el sistema no muestra la push: llega aquí.
+    messaging.onMessage(p => {
+      const n = p.notification || {};
+      if (n.title) toast(n.title + ': ' + (n.body || 'mensaje nuevo'), 'info');
+    });
+    return true;
+  } catch (err) { console.error('activarPush:', err); return false; }
+}
+
+/**
+ * Si ya hay permiso, se renueva el token en silencio (cambia al
+ * reinstalar). Si no, se ofrece un botón: pedirlo de golpe al entrar es
+ * justo lo que la gente rechaza, y el navegador no vuelve a preguntar.
+ */
+function setupPush() {
+  if (!VAPID_KEY || !('Notification' in window)) return;
+  if (Notification.permission === 'granted') { activarPush(); return; }
+  if (Notification.permission === 'denied')  return;
+  if (localStorage.getItem('elaguila_push_no')) return;
+
+  const bar = document.createElement('div');
+  bar.className = 'push-ask';
+  bar.innerHTML = `
+    <i class="fa-solid fa-bell"></i>
+    <div style="flex:1">
+      <div class="push-ask-t">Avisos en tu teléfono</div>
+      <div class="push-ask-s">Entérate de los mensajes sin abrir la app</div>
+    </div>
+    <button class="push-si">Activar</button>
+    <button class="push-no" aria-label="Ahora no"><i class="fa-solid fa-xmark"></i></button>`;
+  bar.querySelector('.push-si').onclick = async () => {
+    const ok = await activarPush();
+    toast(ok ? 'Avisos activados' : 'No se pudieron activar', ok ? 'ok' : 'err');
+    bar.remove();
+  };
+  bar.querySelector('.push-no').onclick = () => {
+    localStorage.setItem('elaguila_push_no', '1');
+    bar.remove();
+  };
+  document.querySelector('.appbar').insertAdjacentElement('afterend', bar);
 }
