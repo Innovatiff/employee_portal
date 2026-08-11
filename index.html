@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%234f46e5'/%3E%3Cg transform='translate(2.8 8.03) scale(0.726)'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M8.6 27C7.6 15.4 15.4 5.4 26.6 5.4C33.4 5.4 37.6 9.2 39 14.3L46.3 16.9C49.5 18.1 49.9 21.3 46.7 25.5C44.9 27.9 42.7 29.6 40.5 30.4C41.9 27.6 41.7 25 40.5 23.6C38.7 21.7 36.1 21.2 33.7 22C32.1 23.8 30.7 26 29.3 28.2C27.7 30.7 26.3 33.8 25 38.6L10.6 33.2C9.2 31.2 8.7 29 8.6 27ZM28.9 13.3C31.1 12.3 33.7 13.1 34.3 15.1C33.1 16.5 30.5 16.5 28.9 15.3Z'/%3E%3C/g%3E%3C/svg%3E">
+<title>El Águila — Portal</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<!-- ══════════ Acceso ══════════ -->
+<div class="login" id="loginScreen">
+  <div class="login-inner">
+    <div class="login-brand">
+      <div class="login-logo">
+        <svg viewBox="7 0 44 44"><path fill-rule="evenodd" d="M8.6 27C7.6 15.4 15.4 5.4 26.6 5.4C33.4 5.4 37.6 9.2 39 14.3L46.3 16.9C49.5 18.1 49.9 21.3 46.7 25.5C44.9 27.9 42.7 29.6 40.5 30.4C41.9 27.6 41.7 25 40.5 23.6C38.7 21.7 36.1 21.2 33.7 22C32.1 23.8 30.7 26 29.3 28.2C27.7 30.7 26.3 33.8 25 38.6L10.6 33.2C9.2 31.2 8.7 29 8.6 27ZM28.9 13.3C31.1 12.3 33.7 13.1 34.3 15.1C33.1 16.5 30.5 16.5 28.9 15.3Z"/></svg>
+      </div>
+      <div class="login-name">El Águila</div>
+      <div class="login-sub">Portal del Colaborador</div>
+    </div>
+
+    <div class="login-card">
+      <h2>Inicia sesión</h2>
+      <p>Con el correo que registró tu gerente.</p>
+
+      <div class="alert err" id="loginAlert"><i class="fa-solid fa-circle-exclamation"></i><span id="loginAlertMsg"></span></div>
+
+      <form onsubmit="doLogin(event)">
+        <div class="field">
+          <label>Correo electrónico</label>
+          <input type="email" id="email" placeholder="tu@correo.com" required autocomplete="email" inputmode="email">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="pass" placeholder="Tu contraseña" required autocomplete="current-password">
+            <button type="button" class="pw-eye" onclick="togglePw()"><i class="fa-solid fa-eye" id="pwIco"></i></button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="loginBtn" style="margin-top:6px">
+          <i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar
+        </button>
+      </form>
+
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-sm" style="background:none;color:var(--muted)" onclick="forgotPass()">
+          ¿Olvidaste tu contraseña?
+        </button>
+      </div>
+
+      <p style="font-size:12px;color:var(--light);text-align:center;margin-top:14px;line-height:1.5">
+        La primera vez, tu contraseña es el PIN de 6 dígitos que te dio tu gerente.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ App ══════════ -->
+<div class="app" id="app">
+  <header class="appbar">
+    <div style="flex:1">
+      <h1 id="barTitle">Inicio</h1>
+      <span class="sub" id="barSub"></span>
+    </div>
+    <div id="barAva" onclick="showPerfil()" style="cursor:pointer"></div>
+  </header>
+
+  <main id="view" class="view"></main>
+
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<!-- Conversación a pantalla completa -->
+<div class="thread" id="thread">
+  <div class="thread-bar">
+    <button class="back" onclick="closeThread()"><i class="fa-solid fa-chevron-left"></i></button>
+    <div id="threadAva"></div>
+    <div style="flex:1;min-width:0">
+      <div class="thread-n" id="threadN"></div>
+      <div class="thread-s" id="threadS"></div>
+    </div>
+  </div>
+  <div class="msgs" id="msgs"></div>
+  <div id="composeWrap"></div>
+</div>
+
+<!-- Hoja inferior -->
+<div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-grip"></div>
+  <div id="sheetBody"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="app.js"></script>
+<script>
+// ══════════ Acceso ══════════
+function togglePw() {
+  const i = document.getElementById('pass'), c = document.getElementById('pwIco');
+  const show = i.type === 'password';
+  i.type = show ? 'text' : 'password';
+  c.className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+}
+function loginErr(msg) {
+  const a = document.getElementById('loginAlert');
+  document.getElementById('loginAlertMsg').textContent = msg;
+  a.className = 'alert err on';
+}
+function loginOk(msg) {
+  const a = document.getElementById('loginAlert');
+  document.getElementById('loginAlertMsg').textContent = msg;
+  a.className = 'alert ok on';
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  document.getElementById('loginAlert').className = 'alert';
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
+  try {
+    await auth.signInWithEmailAndPassword(
+      document.getElementById('email').value.trim(),
+      document.getElementById('pass').value);
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar';
+    loginErr({
+      'auth/user-not-found':    'No existe una cuenta con ese correo.',
+      'auth/wrong-password':    'Contraseña incorrecta.',
+      'auth/invalid-credential':'Correo o contraseña incorrectos.',
+      'auth/invalid-email':     'Ese correo no es válido.',
+      'auth/too-many-requests': 'Demasiados intentos. Espera un momento.'
+    }[err.code] || err.message);
+  }
+}
+
+async function forgotPass() {
+  const email = document.getElementById('email').value.trim();
+  if (!email) { loginErr('Escribe tu correo primero y vuelve a tocar aquí.'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    loginOk('Te enviamos un correo para restablecer tu contraseña.');
+  } catch (err) {
+    loginErr(err.code === 'auth/user-not-found'
+      ? 'No existe una cuenta con ese correo.' : err.message);
+  }
+}
+
+function logout() { auth.signOut().then(() => location.reload()); }
+
+// ══════════ Arranque ══════════
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    document.getElementById('loginScreen').style.display = '';
+    document.getElementById('app').classList.remove('on');
+    return;
+  }
+  try {
+    await loadSession(user);
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').classList.add('on');
+    document.getElementById('barAva').innerHTML = avatar(ME.name, 36);
+    buildTabs();
+    go('inicio');
+  } catch (err) {
+    await auth.signOut();
+    document.getElementById('loginScreen').style.display = '';
+    loginErr(err.message);
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar';
+  }
+});
+
+// ══════════ Navegación ══════════
+const TABS = [
+  { id:'inicio',   ico:'fa-house',              lbl:'Inicio'   },
+  { id:'horas',    ico:'fa-clock',              lbl:'Horas'    },
+  { id:'pagos',    ico:'fa-file-invoice-dollar',lbl:'Pagos'    },
+  { id:'permisos', ico:'fa-calendar-days',      lbl:'Permisos' },
+  { id:'grupo',    ico:'fa-comments',           lbl:'Grupo'    }
+];
+let TAB = 'inicio';
+
+function buildTabs() {
+  document.getElementById('tabbar').innerHTML = TABS.map(t =>
+    `<button class="tab ${t.id===TAB?'on':''}" data-t="${t.id}" onclick="go('${t.id}')">
+       <i class="fa-solid ${t.ico}"></i><span>${t.lbl}</span></button>`).join('');
+}
+
+const TITLES = {
+  inicio:'Inicio', horas:'Mis Horas', pagos:'Mis Pagos',
+  permisos:'Permisos', grupo:'Grupo', pedidos:'Pedidos'
+};
+
+function go(tab) {
+  TAB = tab;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  document.getElementById('barTitle').textContent = TITLES[tab] || '';
+  document.getElementById('barSub').textContent = tab === 'inicio'
+    ? fDateLong(new Date()) : (ME ? storeName(ME.store) : '');
+  stopChatListeners();
+  ({ inicio:vInicio, horas:vHoras, pagos:vPagos, permisos:vPermisos,
+     grupo:vGrupo, pedidos:vPedidos }[tab] || vInicio)();
+}
+
+const el = () => document.getElementById('view');
+const loading = (n=3) => el().innerHTML = '<div class="skel-card"></div>'.repeat(n);
+
+// ══════════ Inicio ══════════
+async function vInicio() {
+  loading(3);
+  try {
+    const p = curPeriod();
+    const [open, cis] = await Promise.all([myOpenShift(), myClockIns(p.start, p.end)]);
+
+    const done   = cis.filter(c => c.clockOut);
+    const horas  = done.reduce((s,c)=>s+(c.hours||0),0);
+    const dias   = new Set(done.map(c=>c.date)).size;
+    const hoy    = done.filter(c=>c.date===todayStr()).reduce((s,c)=>s+(c.hours||0),0);
+    const estim  = horas * ME.rate;
+
+    let turno;
+    if (open) {
+      const desde = open.clockIn.toDate();
+      const trans = ((Date.now()-desde.getTime())/3600000);
+      turno = `<div class="shift activo">
+        <div class="shift-top"><span class="pip"></span>TURNO ABIERTO</div>
+        <div class="shift-big">${trans.toFixed(2)} h</div>
+        <div class="shift-sub">Entraste a las ${fTime(desde)}</div>
+      </div>`;
+    } else {
+      turno = `<div class="shift inactivo">
+        <div class="shift-top"><span class="pip"></span>SIN TURNO ABIERTO</div>
+        <div class="shift-big">${hoy.toFixed(2)} h</div>
+        <div class="shift-sub">${hoy>0 ? 'Trabajadas hoy' : 'Marca tu entrada en el reloj de la tienda'}</div>
+      </div>`;
+    }
+
+    el().innerHTML = `
+      <div style="margin-bottom:16px">
+        <div style="font-size:24px;font-weight:800;letter-spacing:-.04em">Hola, ${esc((ME.name||'').split(' ')[0])}</div>
+        <div style="font-size:13.5px;color:var(--muted);margin-top:2px">${esc(ME.jobTitle)} · ${storeName(ME.store)}</div>
+      </div>
+
+      ${turno}
+
+      <div class="section-t">Período actual · ${perLabel(p)}</div>
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-ico ico-p"><i class="fa-solid fa-clock"></i></div>
+          <div class="kpi-l">Horas</div><div class="kpi-v">${horas.toFixed(2)}</div></div>
+        <div class="kpi"><div class="kpi-ico ico-c"><i class="fa-solid fa-calendar-check"></i></div>
+          <div class="kpi-l">Días</div><div class="kpi-v">${dias}</div></div>
+        <div class="kpi"><div class="kpi-ico ico-g"><i class="fa-solid fa-sack-dollar"></i></div>
+          <div class="kpi-l">Estimado</div><div class="kpi-v" style="font-size:19px">${money(estim)}</div></div>
+        <div class="kpi"><div class="kpi-ico ico-a"><i class="fa-solid fa-hourglass-half"></i></div>
+          <div class="kpi-l">Tarifa</div><div class="kpi-v" style="font-size:19px">${money(ME.rate)}</div></div>
+      </div>
+
+      <div class="section-t">Accesos</div>
+      <div class="card">
+        <div class="row row-link" onclick="go('permisos');openPermisoSheet()">
+          <div class="kpi-ico ico-a" style="margin:0"><i class="fa-solid fa-plane-departure"></i></div>
+          <div class="row-main"><div class="row-t">Solicitar permiso</div>
+            <div class="row-s">Vacaciones, enfermedad o personal</div></div>
+          <i class="fa-solid fa-chevron-right chev"></i>
+        </div>
+        ${ME.canPedidos ? `
+        <div class="row row-link" onclick="go('pedidos')">
+          <div class="kpi-ico ico-p" style="margin:0"><i class="fa-solid fa-clipboard-list"></i></div>
+          <div class="row-main"><div class="row-t">Pedidos</div>
+            <div class="row-s">Listas de ${storeShort(ME.store)}</div></div>
+          <i class="fa-solid fa-chevron-right chev"></i>
+        </div>` : ''}
+        <div class="row row-link" onclick="go('grupo')">
+          <div class="kpi-ico ico-c" style="margin:0"><i class="fa-solid fa-bullhorn"></i></div>
+          <div class="row-main"><div class="row-t">Anuncios y mensajes</div>
+            <div class="row-s">Novedades del equipo</div></div>
+          <i class="fa-solid fa-chevron-right chev"></i>
+        </div>
+      </div>`;
+  } catch (err) { errView(err); }
+}
+
+function errView(err) {
+  console.error(err);
+  el().innerHTML = `<div class="card"><div class="empty">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <p>${esc(err.message || 'No se pudieron cargar los datos.')}</p></div></div>`;
+}
+
+// ══════════ Horas ══════════
+let horasIdx = null;
+async function vHoras() {
+  if (horasIdx === null) horasIdx = perIndex(new Date());
+  loading(2);
+  try {
+    const p = perByIndex(horasIdx);
+    const cis = await myClockIns(p.start, p.end);
+    const done = cis.filter(c=>c.clockOut);
+    const horas = done.reduce((s,c)=>s+(c.hours||0),0);
+    const dias  = new Set(done.map(c=>c.date)).size;
+
+    const porDia = {};
+    cis.forEach(c => { (porDia[c.date] = porDia[c.date] || []).push(c); });
+    const fechas = Object.keys(porDia).sort().reverse();
+
+    el().innerHTML = `
+      <div class="pernav">
+        <button onclick="horasIdx--;vHoras()"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="lbl"><b>${perLabel(p)}</b>
+          <span>${horasIdx === perIndex(new Date()) ? 'Período actual' : parseD(p.end).getFullYear()}</span></div>
+        <button onclick="horasIdx++;vHoras()"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+
+      <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi"><div class="kpi-l">Horas</div><div class="kpi-v">${horas.toFixed(2)}</div></div>
+        <div class="kpi"><div class="kpi-l">Días</div><div class="kpi-v">${dias}</div></div>
+        <div class="kpi"><div class="kpi-l">Estimado</div><div class="kpi-v" style="font-size:18px">${money(horas*ME.rate)}</div></div>
+      </div>
+
+      ${fechas.length === 0
+        ? `<div class="card"><div class="empty"><i class="fa-regular fa-clock"></i>
+             <p>No hay turnos registrados en este período.</p></div></div>`
+        : `<div class="card">${fechas.map(f => {
+            const t = porDia[f];
+            const d = parseD(f);
+            const tot = t.filter(x=>x.clockOut).reduce((s,x)=>s+(x.hours||0),0);
+            return `<div class="row">
+              <div class="row-main">
+                <div class="row-t">${DCORTO[d.getDay()]} ${fDateShort(f)}</div>
+                <div class="row-s">${t.map(x => x.clockOut
+                  ? `${fTime(x.clockIn)} – ${fTime(x.clockOut)}`
+                  : `${fTime(x.clockIn)} · <span style="color:var(--green);font-weight:600">en curso</span>`).join(' &nbsp;·&nbsp; ')}</div>
+              </div>
+              <div class="row-v">${tot.toFixed(2)}h${t.length>1?`<small>${t.length} turnos</small>`:''}</div>
+            </div>`;
+          }).join('')}</div>`}`;
+  } catch (err) { errView(err); }
+}
+
+// ══════════ Pagos ══════════
+async function vPagos() {
+  loading(3);
+  try {
+    const list = await myPayStatements();
+    const pagado   = list.filter(s=>s.status==='paid');
+    const totalAno = pagado.reduce((s,x)=>s+(x.gross||0),0);
+
+    el().innerHTML = `
+      <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
+        <div class="kpi"><div class="kpi-ico ico-g"><i class="fa-solid fa-circle-check"></i></div>
+          <div class="kpi-l">Recibido</div><div class="kpi-v" style="font-size:19px">${money(totalAno)}</div></div>
+        <div class="kpi"><div class="kpi-ico ico-a"><i class="fa-solid fa-hourglass-half"></i></div>
+          <div class="kpi-l">Pendiente</div>
+          <div class="kpi-v" style="font-size:19px">${money(list.filter(s=>s.status!=='paid').reduce((s,x)=>s+(x.gross||0),0))}</div></div>
+      </div>
+
+      <div class="section-t">Recibos</div>
+      ${list.length === 0
+        ? `<div class="card"><div class="empty"><i class="fa-solid fa-file-invoice-dollar"></i>
+             <p>Todavía no tienes recibos.<br><span style="font-size:12.5px">Aparecerán cuando tu gerente cierre el período.</span></p></div></div>`
+        : `<div class="card">${list.map(s => {
+            const pagado = s.status === 'paid';
+            return `<div class="row row-link" onclick='verRecibo(${JSON.stringify(JSON.stringify(s))})'>
+              <div class="row-main">
+                <div class="row-t">${fDateShort(s.periodStart)} – ${fDate(s.periodEnd)}</div>
+                <div class="row-s">${(s.hours||0).toFixed(2)} h · ${money(s.rate)}/h</div>
+              </div>
+              <div style="text-align:right">
+                <div class="row-v">${money(s.gross)}</div>
+                <span class="badge ${pagado?'b-green':'b-amber'}" style="margin-top:4px">${pagado?'Pagado':'Pendiente'}</span>
+              </div>
+            </div>`;
+          }).join('')}</div>`}`;
+  } catch (err) { errView(err); }
+}
+
+function verRecibo(json) {
+  const s = JSON.parse(json);
+  const pagado = s.status === 'paid';
+  openSheet(`
+    <h3>Recibo de pago</h3>
+    <p class="lead">${fDate(s.periodStart)} — ${fDate(s.periodEnd)}</p>
+    <div class="card" style="margin-bottom:14px">
+      <div class="row"><div class="row-main"><div class="row-t">Horas trabajadas</div></div>
+        <div class="row-v">${(s.hours||0).toFixed(2)} h</div></div>
+      <div class="row"><div class="row-main"><div class="row-t">Tarifa por hora</div></div>
+        <div class="row-v">${money(s.rate)}</div></div>
+      <div class="row" style="background:var(--primary-soft)">
+        <div class="row-main"><div class="row-t">Total bruto</div>
+          <div class="row-s">Antes de deducciones</div></div>
+        <div class="row-v" style="font-size:19px;color:var(--primary)">${money(s.gross)}</div></div>
+      <div class="row"><div class="row-main"><div class="row-t">Estado</div>
+        ${s.paidDate ? `<div class="row-s">Pagado el ${fDate(s.paidDate)}</div>` : ''}</div>
+        <span class="badge ${pagado?'b-green':'b-amber'}">${pagado?'Pagado':'Pendiente'}</span></div>
+    </div>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()">Cerrar</button>`);
+}
+
+// ══════════ Permisos ══════════
+const TO_TIPO   = { vacation:'Vacaciones', sick:'Enfermedad', personal:'Personal' };
+const TO_BADGE  = { vacation:'b-blue', sick:'b-red', personal:'b-amber' };
+const TO_ESTADO = { approved:{l:'Aprobado',b:'b-green'}, pending:{l:'Pendiente',b:'b-amber'}, denied:{l:'Denegado',b:'b-red'} };
+
+async function vPermisos() {
+  loading(2);
+  try {
+    const list = await myTimeOff();
+    el().innerHTML = `
+      <button class="btn btn-primary btn-block" onclick="openPermisoSheet()" style="margin-bottom:16px">
+        <i class="fa-solid fa-plus"></i> Solicitar permiso
+      </button>
+
+      ${list.length === 0
+        ? `<div class="card"><div class="empty"><i class="fa-solid fa-calendar-days"></i>
+             <p>No tienes solicitudes.</p></div></div>`
+        : `<div class="card">${list.map(t => {
+            const s = parseD(t.startDate), e = parseD(t.endDate);
+            const dias = Math.round((e-s)/86400000)+1;
+            const est = TO_ESTADO[t.status] || TO_ESTADO.pending;
+            return `<div class="row" style="align-items:flex-start">
+              <div class="row-main">
+                <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                  <span class="badge ${TO_BADGE[t.type]||'b-gray'}">${TO_TIPO[t.type]||t.type}</span>
+                  <span class="badge ${est.b}">${est.l}</span>
+                </div>
+                <div class="row-t" style="margin-top:7px">${fDateShort(t.startDate)} – ${fDate(t.endDate)}</div>
+                <div class="row-s">${dias} ${dias===1?'día':'días'}${t.note?' · '+esc(t.note):''}</div>
+                ${t.status==='denied' && t.denyReason
+                  ? `<div class="motivo"><i class="fa-solid fa-circle-info"></i>
+                       <div><b>Motivo:</b> ${esc(t.denyReason)}</div></div>` : ''}
+              </div>
+            </div>`;
+          }).join('')}</div>`}`;
+  } catch (err) { errView(err); }
+}
+
+function openPermisoSheet() {
+  const hoy = todayStr();
+  openSheet(`
+    <h3>Solicitar permiso</h3>
+    <p class="lead">Tu gerente recibirá la solicitud y te responderá aquí.</p>
+    <div class="field"><label>Tipo</label>
+      <select id="toType">
+        <option value="vacation">Vacaciones</option>
+        <option value="sick">Enfermedad</option>
+        <option value="personal">Personal</option>
+      </select></div>
+    <div class="field"><label>Desde</label><input type="date" id="toStart" value="${hoy}"></div>
+    <div class="field"><label>Hasta</label><input type="date" id="toEnd" value="${hoy}"></div>
+    <div class="field"><label>Nota (opcional)</label>
+      <textarea id="toNote" placeholder="Cuéntale a tu gerente el motivo..."></textarea></div>
+    <button class="btn btn-primary btn-block" id="toBtn" onclick="enviarPermiso()">Enviar solicitud</button>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cancelar</button>`);
+}
+
+async function enviarPermiso() {
+  const start = document.getElementById('toStart').value;
+  const end   = document.getElementById('toEnd').value;
+  const type  = document.getElementById('toType').value;
+  const note  = document.getElementById('toNote').value.trim();
+  if (!start || !end) { toast('Elige las fechas.', 'err'); return; }
+  if (end < start)    { toast('La fecha final no puede ser antes de la inicial.', 'err'); return; }
+  const b = document.getElementById('toBtn');
+  b.disabled = true; b.textContent = 'Enviando...';
+  try {
+    await requestTimeOff({ startDate:start, endDate:end, type, note });
+    closeSheet();
+    toast('Solicitud enviada', 'ok');
+    vPermisos();
+  } catch (err) {
+    b.disabled = false; b.textContent = 'Enviar solicitud';
+    toast('No se pudo enviar: ' + err.message, 'err');
+  }
+}
+
+// ══════════ Pedidos ══════════
+async function vPedidos() {
+  if (!ME.canPedidos) {
+    el().innerHTML = `<div class="card"><div class="empty"><i class="fa-solid fa-lock"></i>
+      <p>No estás asignado para gestionar pedidos.<br>
+      <span style="font-size:12.5px">Pídeselo a tu gerente.</span></p></div></div>`;
+    return;
+  }
+  loading(3);
+  try {
+    const list = await storePedidos();
+    el().innerHTML = `
+      <button class="btn btn-primary btn-block" onclick="openPedidoSheet()" style="margin-bottom:16px">
+        <i class="fa-solid fa-plus"></i> Nuevo pedido
+      </button>
+      ${list.length === 0
+        ? `<div class="card"><div class="empty"><i class="fa-solid fa-clipboard-list"></i>
+             <p>Aún no hay pedidos.</p></div></div>`
+        : `<div class="card">${list.map(p => {
+            const e = PED_ESTADO[p.status||'borrador'] || PED_ESTADO.borrador;
+            const n = (p.items||[]).length;
+            return `<div class="row row-link" onclick="verPedido('${p.id}')">
+              <div class="kpi-ico ico-p" style="margin:0"><i class="fa-solid fa-clipboard-list"></i></div>
+              <div class="row-main">
+                <div class="row-t">${esc(p.title||'Sin título')}</div>
+                <div class="row-s">${fDate(p.date)} · ${n} ${n===1?'artículo':'artículos'}</div>
+              </div>
+              <span class="badge ${e.badge}">${e.label}</span>
+            </div>`;
+          }).join('')}</div>`}`;
+    window._peds = list;
+  } catch (err) { errView(err); }
+}
+
+function verPedido(id) {
+  const p = (window._peds||[]).find(x=>x.id===id);
+  if (!p) return;
+  const items = p.items||[];
+  const mio = p.createdBy === ME.employeeId;
+  openSheet(`
+    <h3>${esc(p.title||'')}</h3>
+    <p class="lead">${fDate(p.date)} · ${esc(p.createdByName||'')}</p>
+    <div class="card" style="margin-bottom:14px">
+      ${items.length ? items.map(i=>`<div class="row">
+        <div class="row-main"><div class="row-t">${esc(i.name)}</div>
+        ${i.note?`<div class="row-s">${esc(i.note)}</div>`:''}</div>
+        <div class="row-v">${esc(i.qty)||''} ${esc(i.unit)||''}</div></div>`).join('')
+        : '<div class="empty"><p>Sin artículos.</p></div>'}
+    </div>
+    ${mio ? `<button class="btn btn-primary btn-block" onclick="openPedidoSheet('${p.id}')">Editar</button>` : ''}
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cerrar</button>`);
+}
+
+function openPedidoSheet(id) {
+  const p = id ? (window._peds||[]).find(x=>x.id===id) : null;
+  openSheet(`
+    <h3>${p?'Editar pedido':'Nuevo pedido'}</h3>
+    <p class="lead">${storeName(ME.store)}</p>
+    <input type="hidden" id="pedId" value="${p?p.id:''}">
+    <div class="field"><label>Título</label>
+      <input type="text" id="pedTitle" value="${p?esc(p.title||''):''}" placeholder="ej. Pedido semanal"></div>
+    <div class="field"><label>Fecha</label>
+      <input type="date" id="pedDate" value="${p?(p.date||todayStr()):todayStr()}"></div>
+    <div class="field"><label>Estado</label>
+      <select id="pedEstado">
+        <option value="borrador" ${p&&p.status==='borrador'?'selected':''}>Borrador</option>
+        <option value="enviado"  ${p&&p.status==='enviado' ?'selected':''}>Enviado</option>
+        <option value="recibido" ${p&&p.status==='recibido'?'selected':''}>Recibido</option>
+      </select></div>
+    <div class="field">
+      <label style="display:flex;align-items:center;justify-content:space-between">Artículos
+        <button class="btn btn-sm btn-ghost" onclick="addItem()"><i class="fa-solid fa-plus"></i> Agregar</button></label>
+      <div id="items"></div>
+    </div>
+    <button class="btn btn-primary btn-block" id="pedBtn" onclick="guardarPedido()">Guardar</button>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cancelar</button>`);
+  const items = (p && p.items) || [];
+  items.forEach(addItem);
+  if (!items.length) addItem();
+}
+
+function addItem(it) {
+  const v = it || { name:'', qty:'', unit:'', note:'' };
+  document.getElementById('items').insertAdjacentHTML('beforeend',
+    `<div class="item-row">
+      <input type="text" class="i-n" value="${esc(v.name)}" placeholder="Artículo">
+      <input type="text" class="i-q" value="${esc(v.qty)}" placeholder="Cant.">
+      <button class="del" onclick="this.parentNode.remove()"><i class="fa-solid fa-xmark"></i></button>
+    </div>`);
+}
+
+async function guardarPedido() {
+  const title = document.getElementById('pedTitle').value.trim();
+  if (!title) { toast('Ponle un título.', 'err'); return; }
+  const items = [...document.querySelectorAll('#items .item-row')].map(r => ({
+    name: r.querySelector('.i-n').value.trim(),
+    qty:  r.querySelector('.i-q').value.trim(), unit:'', note:''
+  })).filter(i => i.name);
+  if (!items.length) { toast('Agrega al menos un artículo.', 'err'); return; }
+
+  const b = document.getElementById('pedBtn');
+  b.disabled = true; b.textContent = 'Guardando...';
+  try {
+    await savePedido({
+      title, items,
+      date:   document.getElementById('pedDate').value,
+      status: document.getElementById('pedEstado').value
+    }, document.getElementById('pedId').value || null);
+    closeSheet();
+    toast('Pedido guardado', 'ok');
+    vPedidos();
+  } catch (err) {
+    b.disabled = false; b.textContent = 'Guardar';
+    toast('No se pudo guardar: ' + err.message, 'err');
+  }
+}
+
+// ══════════ Grupo ══════════
+let unsubChats = null, unsubMsgs = null, people = [], chatMeta = {}, activeChat = null;
+
+function stopChatListeners() {
+  if (unsubMsgs)  { unsubMsgs();  unsubMsgs  = null; }
+  if (unsubChats) { unsubChats(); unsubChats = null; }
+}
+
+async function vGrupo() {
+  el().innerHTML = '<div class="skel-card"></div>'.repeat(4);
+  try {
+    if (!people.length) {
+      const [emps, mgrs] = await Promise.all([
+        db.collection('Employees').get(),
+        db.collection('Main').get()
+      ]);
+      people = [];
+      mgrs.docs.forEach(d => { const m=d.data();
+        people.push({ pid:'mgr:'+d.id, name:m.name||m.email||'Gerencia', sub:'Gerencia', kind:'m' }); });
+      emps.docs.forEach(d => { const e=d.data();
+        if (e.status==='active') people.push({ pid:'emp:'+d.id, name:e.name, sub:storeShort(e.store), kind:'c' }); });
+      people = people.filter(p => p.pid !== ME.pid);
+    }
+    paintConvs();
+    unsubChats = listenChats(list => {
+      chatMeta = {}; list.forEach(c => chatMeta[c.id] = c);
+      if (TAB === 'grupo') paintConvs();
+    });
+  } catch (err) { errView(err); }
+}
+
+function paintConvs() {
+  const a = chatMeta[ANUNCIOS] || {};
+  const mgrs = people.filter(p=>p.kind==='m'), cols = people.filter(p=>p.kind==='c');
+  const row = p => {
+    const m = chatMeta[dmId(ME.pid,p.pid)] || {};
+    return `<div class="conv" onclick="openDm('${p.pid}')">
+      ${avatar(p.name,44)}
+      <div class="conv-main">
+        <div class="conv-top"><span class="conv-n">${esc(p.name)}</span>
+          <span class="conv-t">${m.lastAt?relTime(m.lastAt):''}</span></div>
+        <div class="conv-s">${esc(m.lastMessage || p.sub)}</div>
+      </div></div>`;
+  };
+  el().innerHTML = `
+    <div class="conv" onclick="openAnuncios()">
+      <div class="conv-ava anuncios"><i class="fa-solid fa-bullhorn"></i></div>
+      <div class="conv-main">
+        <div class="conv-top"><span class="conv-n">Anuncios Generales</span>
+          <span class="conv-t">${a.lastAt?relTime(a.lastAt):''}</span></div>
+        <div class="conv-s">${esc(a.lastMessage || 'Novedades para todo el equipo')}</div>
+      </div></div>
+    ${mgrs.length?`<div class="conv-label">Gerencia</div>${mgrs.map(row).join('')}`:''}
+    ${cols.length?`<div class="conv-label">Compañeros</div>${cols.map(row).join('')}`:''}`;
+}
+
+async function openAnuncios() {
+  const ref = db.collection('Chats').doc(ANUNCIOS);
+  if (!(await ref.get()).exists) {
+    await ref.set({ type:'anuncios', participants:[], names:{},
+      lastMessage:'', lastAt: firebase.firestore.FieldValue.serverTimestamp() });
+  }
+  activeChat = { id:ANUNCIOS, type:'anuncios', title:'Anuncios Generales',
+                 sub:'Todo el equipo · sólo lectura' };
+  mountThread();
+}
+
+async function openDm(pid) {
+  const p = people.find(x=>x.pid===pid);
+  if (!p) return;
+  const names = {}; names[ME.pid]=ME.name; names[p.pid]=p.name;
+  const id = await ensureDm(p.pid, names);
+  activeChat = { id, type:'dm', title:p.name, sub:p.sub+' · Conversación privada' };
+  mountThread();
+}
+
+function mountThread() {
+  document.getElementById('threadN').textContent = activeChat.title;
+  document.getElementById('threadS').textContent = activeChat.sub;
+  document.getElementById('threadAva').innerHTML = activeChat.type==='anuncios'
+    ? '<div class="conv-ava anuncios" style="width:38px;height:38px;font-size:14px"><i class="fa-solid fa-bullhorn"></i></div>'
+    : avatar(activeChat.title, 38);
+
+  document.getElementById('composeWrap').innerHTML = activeChat.type==='anuncios'
+    ? `<div class="locked"><i class="fa-solid fa-bullhorn"></i> Sólo la gerencia publica anuncios.</div>`
+    : `<div class="compose">
+         <textarea id="msgIn" rows="1" placeholder="Escribe un mensaje..."></textarea>
+         <button class="send" onclick="enviarMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+       </div>`;
+
+  document.getElementById('msgs').innerHTML =
+    '<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+  document.getElementById('thread').classList.add('on');
+
+  if (unsubMsgs) unsubMsgs();
+  unsubMsgs = listenMessages(activeChat.id, paintMsgs);
+}
+
+function closeThread() {
+  document.getElementById('thread').classList.remove('on');
+  if (unsubMsgs) { unsubMsgs(); unsubMsgs = null; }
+  activeChat = null;
+}
+
+function paintMsgs(list) {
+  const box = document.getElementById('msgs');
+  if (!list.length) {
+    box.innerHTML = `<div class="empty"><i class="fa-regular fa-comment-dots"></i>
+      <p>${activeChat.type==='anuncios'?'Todavía no hay anuncios.':'Escribe el primer mensaje.'}</p></div>`;
+    return;
+  }
+  let html = '', dia = '';
+  list.forEach(m => {
+    const d = m.createdAt?.toDate?.() || new Date();
+    const k = toDateStr(d);
+    if (k !== dia) { dia = k;
+      html += `<div class="day"><span>${k===todayStr()?'Hoy':fDate(k)}</span></div>`; }
+    if (activeChat.type === 'anuncios') {
+      html += `<div class="anuncio">
+        <div class="anuncio-h">${avatar(m.senderName,22)}<b>${esc(m.senderName)}</b>
+          <time>${fTime(d)}</time></div>
+        <div class="anuncio-b">${esc(m.text).replace(/\n/g,'<br>')}</div></div>`;
+    } else {
+      const mio = m.senderId === ME.pid;
+      html += `<div class="bub-row ${mio?'me':''}"><div class="bub">
+        <div class="txt">${esc(m.text).replace(/\n/g,'<br>')}</div>
+        <div class="at">${fTime(d)}</div></div></div>`;
+    }
+  });
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+}
+
+async function enviarMsg() {
+  const i = document.getElementById('msgIn');
+  const t = i.value.trim();
+  if (!t || !activeChat) return;
+  i.value = '';
+  try { await sendMessage(activeChat.id, t); }
+  catch (err) { i.value = t; toast('No se pudo enviar: '+err.message, 'err'); }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && document.activeElement?.id === 'msgIn') {
+    e.preventDefault(); enviarMsg();
+  }
+});
+
+// ══════════ Perfil ══════════
+function showPerfil() {
+  openSheet(`
+    <div style="text-align:center;margin-bottom:20px">
+      ${avatar(ME.name,64)}
+      <div style="font-size:19px;font-weight:700;margin-top:12px">${esc(ME.name)}</div>
+      <div style="font-size:13.5px;color:var(--muted)">${esc(ME.jobTitle)} · ${storeName(ME.store)}</div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="row"><div class="row-main"><div class="row-t">Correo</div></div>
+        <div class="row-s">${esc(ME.email||'—')}</div></div>
+      <div class="row"><div class="row-main"><div class="row-t">Tarifa por hora</div></div>
+        <div class="row-v">${money(ME.rate)}</div></div>
+      <div class="row"><div class="row-main"><div class="row-t">Fecha de ingreso</div></div>
+        <div class="row-s">${fDate(ME.hireDate)}</div></div>
+    </div>
+    <button class="btn btn-ghost btn-block" onclick="cambiarPass()" style="margin-bottom:9px">
+      <i class="fa-solid fa-key"></i> Cambiar contraseña</button>
+    <button class="btn btn-block" style="background:var(--red-soft);color:#9f1239" onclick="logout()">
+      <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>`);
+}
+
+function cambiarPass() {
+  openSheet(`
+    <h3>Cambiar contraseña</h3>
+    <p class="lead">Mínimo 8 caracteres.</p>
+    <div class="field"><label>Contraseña actual</label>
+      <input type="password" id="pOld" autocomplete="current-password"></div>
+    <div class="field"><label>Nueva contraseña</label>
+      <input type="password" id="pNew" autocomplete="new-password"></div>
+    <div class="field"><label>Repite la nueva</label>
+      <input type="password" id="pNew2" autocomplete="new-password"></div>
+    <button class="btn btn-primary btn-block" id="pBtn" onclick="guardarPass()">Guardar</button>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cancelar</button>`);
+}
+
+async function guardarPass() {
+  const o = document.getElementById('pOld').value;
+  const n = document.getElementById('pNew').value;
+  const n2= document.getElementById('pNew2').value;
+  if (n.length < 8)  { toast('La nueva debe tener al menos 8 caracteres.', 'err'); return; }
+  if (n !== n2)      { toast('Las contraseñas no coinciden.', 'err'); return; }
+  const b = document.getElementById('pBtn');
+  b.disabled = true; b.textContent = 'Guardando...';
+  try {
+    const user = auth.currentUser;
+    // Firebase exige reautenticar antes de cambiar la contraseña.
+    await user.reauthenticateWithCredential(
+      firebase.auth.EmailAuthProvider.credential(user.email, o));
+    await user.updatePassword(n);
+    closeSheet();
+    toast('Contraseña actualizada', 'ok');
+  } catch (err) {
+    b.disabled = false; b.textContent = 'Guardar';
+    toast(err.code === 'auth/wrong-password'
+      ? 'La contraseña actual no es correcta.' : err.message, 'err');
+  }
+}
+</script>
+</body>
+</html>
