@@ -236,11 +236,14 @@ const dmId = (a,b) => 'dm_' + [a,b].sort().join('__');
 
 async function ensureDm(otherPid, names) {
   const id = dmId(ME.pid, otherPid);
-  const ref = db.collection('Chats').doc(id);
-  if (!(await ref.get()).exists) {
-    await ref.set({ type:'dm', participants:[ME.pid, otherPid], names:names||{},
-      lastMessage:'', lastAt: firebase.firestore.FieldValue.serverTimestamp() });
-  }
+  // No se consulta antes si existe: las reglas deciden quién puede leer un
+  // chat mirando sus participantes, y en un documento que aún no existe no
+  // hay participantes que mirar, así que la lectura se deniega y la
+  // conversación nunca nacía. Con merge sirve igual para crear que para
+  // actualizar, y no se pisa el último mensaje.
+  await db.collection('Chats').doc(id).set({
+    type:'dm', participants:[ME.pid, otherPid], names:names||{}
+  }, { merge:true });
   return id;
 }
 
