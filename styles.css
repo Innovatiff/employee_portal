@@ -469,3 +469,54 @@ select { appearance:none; padding-right:38px;
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
 }
+
+/* ══ Avisos de mensajes nuevos ══ */
+.bell {
+  position:relative; flex-shrink:0;
+  width:38px; height:38px; margin-right:10px;
+  border:1px solid var(--line); border-radius:12px;
+  background:var(--card); color:var(--muted);
+  font-size:15px; display:grid; place-items:center; cursor:pointer;
+  transition:color .2s ease, border-color .2s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.bell.on { color:var(--primary); border-color:var(--primary); }
+.bell.on i { animation:campanita 1.6s var(--ease) 2; transform-origin:50% 12%; }
+@keyframes campanita {
+  0%,60%,100% { transform:rotate(0); }
+  10% { transform:rotate(13deg); }
+  22% { transform:rotate(-11deg); }
+  34% { transform:rotate(7deg); }
+  46% { transform:rotate(-4deg); }
+}
+.bell-dot {
+  position:absolute; top:-5px; right:-5px;
+  min-width:17px; height:17px; padding:0 4px;
+  border-radius:999px; background:var(--red); color:#fff;
+  font-size:10px; font-weight:700; line-height:17px;
+  border:2px solid var(--card);
+  animation:brote 240ms var(--back) both;
+}
+@keyframes brote { from { transform:scale(0); } to { transform:scale(1); } }
+
+/* Punto sobre la pestaña de Grupo */
+.tab.nuevo::after {
+  content:''; position:absolute; top:11px; right:calc(50% - 18px);
+  width:9px; height:9px; border-radius:50%;
+  background:var(--red); border:1.5px solid #fff;
+  animation:latido 1.8s var(--ease) infinite;
+}
+
+/* Punto en la lista de conversaciones */
+.conv-dot {
+  display:inline-block; width:8px; height:8px; margin-left:7px;
+  border-radius:50%; background:var(--red); vertical-align:middle;
+  animation:latido 1.8s var(--ease) infinite;
+}
+@keyframes latido {
+  0%,100% { box-shadow:0 0 0 0 rgba(225,29,72,.45); }
+  60%     { box-shadow:0 0 0 5px rgba(225,29,72,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .conv-dot, .tab.nuevo::after, .bell.on i { animation:none; }
+}

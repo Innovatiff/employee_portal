@@ -68,6 +68,9 @@
       <h1 id="barTitle">Inicio</h1>
       <span class="sub" id="barSub"></span>
     </div>
+    <button class="bell" id="bell" onclick="go('grupo')" aria-label="Avisos" hidden>
+      <i class="fa-solid fa-bell"></i><span class="bell-dot" id="bellDot"></span>
+    </button>
     <div id="barAva" onclick="showPerfil()" style="cursor:pointer"></div>
   </header>
 
@@ -170,6 +173,7 @@ auth.onAuthStateChanged(async user => {
     document.getElementById('app').classList.add('on');
     document.getElementById('barAva').innerHTML = avatar(ME.name, 36);
     buildTabs();
+    watchChats();
     go('inicio');
   } catch (err) {
     await auth.signOut();
@@ -604,9 +608,46 @@ async function guardarPedido() {
 // ══════════ Grupo ══════════
 let unsubChats = null, unsubMsgs = null, people = [], chatMeta = {}, activeChat = null;
 
+// Sólo se corta la escucha de la conversación abierta. La de la lista de
+// chats se queda viva todo el tiempo: es la que alimenta los avisos desde
+// cualquier pestaña.
 function stopChatListeners() {
-  if (unsubMsgs)  { unsubMsgs();  unsubMsgs  = null; }
-  if (unsubChats) { unsubChats(); unsubChats = null; }
+  if (unsubMsgs) { unsubMsgs(); unsubMsgs = null; }
+}
+
+function watchChats() {
+  if (unsubChats) return;
+  unsubChats = listenChats(list => {
+    chatMeta = {};
+    list.forEach(c => chatMeta[c.id] = c);
+    if (activeChat) marcarLeido(activeChat.id);   // lo abierto se da por visto
+    pintarAvisos();
+    if (TAB === 'grupo') paintConvs();
+  });
+}
+
+let avisosAntes = 0;
+function pintarAvisos() {
+  const nuevos = sinLeer(Object.values(chatMeta));
+  const bell = document.getElementById('bell');
+  const dot  = document.getElementById('bellDot');
+  if (bell) {
+    bell.hidden = false;
+    bell.classList.toggle('on', nuevos.length > 0);
+    dot.hidden = nuevos.length === 0;
+    dot.textContent = nuevos.length > 9 ? '9+' : String(nuevos.length);
+  }
+  const tab = document.querySelector('.tab[data-t="grupo"]');
+  if (tab) tab.classList.toggle('nuevo', nuevos.length > 0);
+
+  if (nuevos.length > avisosAntes && TAB !== 'grupo') {
+    const c = nuevos[0];
+    const quien = c.id === ANUNCIOS
+      ? 'Anuncios Generales'
+      : ((c.names && c.names[c.lastSender]) || 'un compañero');
+    toast('Nuevo mensaje de ' + quien, 'info');
+  }
+  avisosAntes = nuevos.length;
 }
 
 async function vGrupo() {
@@ -625,22 +666,21 @@ async function vGrupo() {
       people = people.filter(p => p.pid !== ME.pid);
     }
     paintConvs();
-    unsubChats = listenChats(list => {
-      chatMeta = {}; list.forEach(c => chatMeta[c.id] = c);
-      if (TAB === 'grupo') paintConvs();
-    });
+    watchChats();
   } catch (err) { errView(err); }
 }
 
 function paintConvs() {
   const a = chatMeta[ANUNCIOS] || {};
+  const pend = {}; sinLeer(Object.values(chatMeta)).forEach(c => pend[c.id] = true);
+  const punto = id => pend[id] ? '<span class="conv-dot"></span>' : '';
   const mgrs = people.filter(p=>p.kind==='m'), cols = people.filter(p=>p.kind==='c');
   const row = p => {
     const m = chatMeta[dmId(ME.pid,p.pid)] || {};
     return `<div class="conv" onclick="openDm('${p.pid}')">
       ${avatar(p.name,44)}
       <div class="conv-main">
-        <div class="conv-top"><span class="conv-n">${esc(p.name)}</span>
+        <div class="conv-top"><span class="conv-n">${esc(p.name)}${punto(dmId(ME.pid,p.pid))}</span>
           <span class="conv-t">${m.lastAt?relTime(m.lastAt):''}</span></div>
         <div class="conv-s">${esc(m.lastMessage || p.sub)}</div>
       </div></div>`;
@@ -649,7 +689,7 @@ function paintConvs() {
     <div class="conv" onclick="openAnuncios()">
       <div class="conv-ava anuncios"><i class="fa-solid fa-bullhorn"></i></div>
       <div class="conv-main">
-        <div class="conv-top"><span class="conv-n">Anuncios Generales</span>
+        <div class="conv-top"><span class="conv-n">Anuncios Generales${punto(ANUNCIOS)}</span>
           <span class="conv-t">${a.lastAt?relTime(a.lastAt):''}</span></div>
         <div class="conv-s">${esc(a.lastMessage || 'Novedades para todo el equipo')}</div>
       </div></div>
@@ -658,11 +698,8 @@ function paintConvs() {
 }
 
 async function openAnuncios() {
-  const ref = db.collection('Chats').doc(ANUNCIOS);
-  if (!(await ref.get()).exists) {
-    await ref.set({ type:'anuncios', participants:[], names:{},
-      lastMessage:'', lastAt: firebase.firestore.FieldValue.serverTimestamp() });
-  }
+  await db.collection('Chats').doc(ANUNCIOS)
+    .set({ type:'anuncios', participants:[], names:{} }, { merge:true });
   activeChat = { id:ANUNCIOS, type:'anuncios', title:'Anuncios Generales',
                  sub:'Todo el equipo · sólo lectura' };
   mountThread();
@@ -678,6 +715,8 @@ async function openDm(pid) {
 }
 
 function mountThread() {
+  marcarLeido(activeChat.id);
+  pintarAvisos();
   document.getElementById('threadN').textContent = activeChat.title;
   document.getElementById('threadS').textContent = activeChat.sub;
   document.getElementById('threadAva').innerHTML = activeChat.type==='anuncios'

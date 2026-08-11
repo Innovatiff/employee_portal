@@ -256,6 +256,7 @@ async function sendMessage(chatId, text) {
   });
   await db.collection('Chats').doc(chatId).set({
     lastMessage: t.slice(0,80),
+    lastSender:  ME.pid,   // para no avisarte de tus propios mensajes
     lastAt: firebase.firestore.FieldValue.serverTimestamp()
   }, { merge:true });
 }
@@ -280,4 +281,32 @@ function listenChats(cb) {
     .onSnapshot(d => { st.anuncios = d.exists ? {id:d.id,...d.data()} : null; emit(); },
                 e => console.error('chats anuncios', e));
   return () => { a(); b(); };
+}
+
+
+// ══ Avisos de mensajes nuevos ══
+//
+// No leído = el chat tiene algo más reciente que la última vez que lo abrí,
+// y no lo escribí yo. La marca se guarda en este teléfono: así no hacen
+// falta reglas nuevas, y "leído" es de verdad por dispositivo.
+
+const leidoKey = () => 'elaguila_leido_' + (ME ? ME.pid : 'anon');
+
+function leidoMap() {
+  try { return JSON.parse(localStorage.getItem(leidoKey()) || '{}'); }
+  catch (e) { return {}; }
+}
+function marcarLeido(chatId) {
+  const m = leidoMap();
+  m[chatId] = Date.now();
+  try { localStorage.setItem(leidoKey(), JSON.stringify(m)); } catch (e) {}
+}
+const msOf = ts => (ts && ts.toMillis ? ts.toMillis() : 0);
+
+function sinLeer(chats) {
+  const l = leidoMap();
+  return chats.filter(c => {
+    const t = msOf(c.lastAt);
+    return t && c.lastSender !== ME.pid && t > (l[c.id] || 0);
+  }).sort((a,b) => msOf(b.lastAt) - msOf(a.lastAt));
 }
