@@ -222,7 +222,7 @@ function buildTabs() {
 
 const TITLES = {
   inicio:'Inicio', horas:'Mis Horas', pagos:'Mis Pagos',
-  permisos:'Permisos', grupo:'Grupo', pedidos:'Pedidos'
+  permisos:'Permisos', grupo:'Grupo', pedidos:'Pedidos', registros:'Registros'
 };
 
 function go(tab) {
@@ -233,7 +233,7 @@ function go(tab) {
     ? fDateLong(new Date()) : (ME ? storeName(ME.store) : '');
   stopChatListeners();
   ({ inicio:vInicio, horas:vHoras, pagos:vPagos, permisos:vPermisos,
-     grupo:vGrupo, pedidos:vPedidos }[tab] || vInicio)();
+     grupo:vGrupo, pedidos:vPedidos, registros:vRegistros }[tab] || vInicio)();
 }
 
 const el = () => document.getElementById('view');
@@ -323,6 +323,13 @@ async function vInicio() {
             <div class="row-s">Vacaciones, enfermedad o personal</div></div>
           <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
         </div>
+        ${ME.canRegistros ? `
+        <div class="row row-link" onclick="go('registros')">
+          <div class="kpi-ico ico-g" style="margin:0"><ion-icon name="car-outline"></ion-icon></div>
+          <div class="row-main"><div class="row-t">Registrar viaje</div>
+            <div class="row-s" id="inicioViajeSub">Kilometraje a las farmacias</div></div>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
+        </div>` : ''}
         ${ME.canPedidos ? `
         <div class="row row-link" onclick="go('pedidos')">
           <div class="kpi-ico ico-p" style="margin:0"><ion-icon name="clipboard-outline"></ion-icon></div>
@@ -338,6 +345,204 @@ async function vInicio() {
         </div>
       </div>`;
   } catch (err) { errView(err); }
+}
+
+// ══════════ Registros de viaje ══════════
+//
+// Dos estados y un botón grande en cada uno: sin viaje abierto se sale,
+// con viaje abierto se llega. La hora se toma sola al pulsar; quien
+// registre tarde puede escribir la hora real con "otra hora".
+
+async function vRegistros() {
+  if (!ME.canRegistros) {
+    el().innerHTML = `<div class="card"><div class="empty"><ion-icon name="lock-closed-outline"></ion-icon>
+      <p>Tu gerente no te ha dado acceso a los registros.</p></div></div>`;
+    return;
+  }
+  loading(2);
+  try {
+    const [abierto, carros, viajes] = await Promise.all([
+      miViajeAbierto(), carrosDeTienda(), misViajes(15)
+    ]);
+
+    let accion;
+    if (abierto) {
+      const desde = abierto.horaSalida?.toDate?.();
+      accion = `
+        <div class="shift activo" style="margin-bottom:14px">
+          <div class="shift-top"><span class="pip"></span>EN RUTA · ${esc(abierto.vehiculo || '')}</div>
+          <div class="shift-big">${desde ? fTime(desde) : '—'}</div>
+          <div class="shift-sub">Saliste con ${abierto.kmSalida} km</div>
+        </div>
+        <button class="btn btn-primary btn-block btn-grande" onclick="abrirLlegada()">
+          <ion-icon name="flag-outline"></ion-icon> Registrar llegada
+        </button>`;
+    } else {
+      accion = `
+        <button class="btn btn-primary btn-block btn-grande" onclick="abrirSalida()">
+          <ion-icon name="navigate-outline"></ion-icon> Iniciar viaje
+        </button>`;
+    }
+
+    const lista = viajes.length ? viajes.map(v => {
+      const enRuta = v.status === 'en-ruta';
+      return `<div class="row">
+        <div class="row-main">
+          <div class="row-t">${esc(v.vehiculo || '—')} · ${fDateShort(v.date)}</div>
+          <div class="row-s">${fTime(v.horaSalida)}${enRuta ? '' : ' – ' + fTime(v.horaLlegada)}
+            ${enRuta ? '' : ' · ' + durLabel(v.minutos)}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="row-v">${enRuta ? '…' : (v.km ?? '—') + ' km'}</div>
+          <span class="badge ${enRuta ? 'b-green' : 'b-blue'}" style="margin-top:4px">${enRuta ? 'En ruta' : 'Completado'}</span>
+        </div>
+      </div>`;
+    }).join('') : `<div class="empty"><ion-icon name="car-outline"></ion-icon><p>Todavía no tienes viajes.</p></div>`;
+
+    el().innerHTML = `
+      ${accion}
+      <div class="section-t" style="margin-top:18px">Mis viajes</div>
+      <div class="card">${lista}</div>`;
+
+    window.__carros = carros;
+  } catch (err) { errView(err); }
+}
+
+function opcionesCarro(carros) {
+  const nombres = Object.keys(carros || {});
+  const ultimo = localStorage.getItem('elaguila_carro') || '';
+  return nombres.map(n =>
+    `<option value="${esc(n)}" ${n === ultimo ? 'selected' : ''}>${esc(n)}</option>`).join('');
+}
+
+function abrirSalida() {
+  const carros = window.__carros || {};
+  const hayCarros = Object.keys(carros).length > 0;
+  openSheet(`
+    <h3>Iniciar viaje</h3>
+    <p class="lead">La hora de salida se toma sola al guardar.</p>
+
+    <label class="lbl">Carro</label>
+    ${hayCarros ? `
+      <select id="viajeCarro" onchange="precargarKm()">${opcionesCarro(carros)}
+        <option value="__otro__">Otro carro...</option></select>
+      <input type="text" id="viajeCarroNuevo" placeholder="Nombre del carro" style="display:none;margin-top:8px">`
+    : `<input type="text" id="viajeCarroNuevo" placeholder="Ej: Toyota blanco">`}
+
+    <label class="lbl" style="margin-top:12px">Kilometraje de salida</label>
+    <input type="number" id="viajeKm" inputmode="decimal" step="0.1" placeholder="Lo que marca el tablero">
+    <div class="hint-km" id="hintKm"></div>
+
+    <label class="lbl chk-otra" style="margin-top:12px">
+      <input type="checkbox" id="viajeOtraHora" onchange="document.getElementById('viajeHora').style.display = this.checked ? '' : 'none'">
+      Salí a otra hora
+    </label>
+    <input type="time" id="viajeHora" style="display:none;margin-top:6px">
+
+    <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="confirmarSalida()">
+      <ion-icon name="navigate-outline"></ion-icon> Salir ahora
+    </button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="closeSheet()">Cancelar</button>`);
+
+  const sel = document.getElementById('viajeCarro');
+  if (sel) sel.onchange = () => {
+    const otro = sel.value === '__otro__';
+    document.getElementById('viajeCarroNuevo').style.display = otro ? '' : 'none';
+    if (!otro) precargarKm();
+  };
+  precargarKm();
+}
+
+// El kilometraje de salida es casi siempre el de llegada del último viaje
+// de ese carro: se rellena solo y sólo se corrige si el tablero dice otra cosa.
+function precargarKm() {
+  const carros = window.__carros || {};
+  const sel = document.getElementById('viajeCarro');
+  const carro = sel && sel.value !== '__otro__' ? sel.value : null;
+  const km = carro && carros[carro] != null ? carros[carro] : null;
+  const input = document.getElementById('viajeKm');
+  const hint = document.getElementById('hintKm');
+  if (km != null) {
+    input.value = km;
+    hint.textContent = `El último viaje de este carro terminó en ${km} km`;
+  } else {
+    input.value = '';
+    hint.textContent = '';
+  }
+}
+
+function nombreCarroElegido() {
+  const sel = document.getElementById('viajeCarro');
+  if (sel && sel.value && sel.value !== '__otro__') return sel.value;
+  return (document.getElementById('viajeCarroNuevo').value || '').trim();
+}
+
+function horaElegida(chkId, horaId) {
+  // Sin marcar "otra hora" se usa el momento de pulsar el botón
+  const chk = document.getElementById(chkId);
+  if (!chk || !chk.checked) return firebase.firestore.Timestamp.now();
+  const v = document.getElementById(horaId).value;
+  if (!v) return null;
+  return firebase.firestore.Timestamp.fromDate(new Date(`${todayStr()}T${v}:00`));
+}
+
+async function confirmarSalida() {
+  const carro = nombreCarroElegido();
+  const km = parseFloat(document.getElementById('viajeKm').value);
+  const hora = horaElegida('viajeOtraHora', 'viajeHora');
+  if (!carro) { toast('Escribe qué carro llevas.', 'err'); return; }
+  if (isNaN(km) || km < 0) { toast('Escribe el kilometraje del tablero.', 'err'); return; }
+  if (!hora) { toast('Escribe la hora de salida.', 'err'); return; }
+  try {
+    await salirDeViaje(carro, km, hora);
+    localStorage.setItem('elaguila_carro', carro);
+    closeSheet();
+    toast('Buen viaje. Registra la llegada al volver.', 'ok');
+    vRegistros();
+  } catch (err) {
+    toast('No se pudo guardar: ' + err.message, 'err');
+  }
+}
+
+function abrirLlegada() {
+  openSheet(`
+    <h3>Registrar llegada</h3>
+    <p class="lead">La hora de llegada se toma sola al guardar.</p>
+
+    <label class="lbl">Kilometraje de llegada</label>
+    <input type="number" id="llegadaKm" inputmode="decimal" step="0.1" placeholder="Lo que marca el tablero">
+
+    <label class="lbl chk-otra" style="margin-top:12px">
+      <input type="checkbox" id="llegadaOtraHora" onchange="document.getElementById('llegadaHora').style.display = this.checked ? '' : 'none'">
+      Llegué a otra hora
+    </label>
+    <input type="time" id="llegadaHora" style="display:none;margin-top:6px">
+
+    <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="confirmarLlegada()">
+      <ion-icon name="flag-outline"></ion-icon> Llegué
+    </button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="closeSheet()">Cancelar</button>`);
+}
+
+async function confirmarLlegada() {
+  const km = parseFloat(document.getElementById('llegadaKm').value);
+  const hora = horaElegida('llegadaOtraHora', 'llegadaHora');
+  if (isNaN(km) || km < 0) { toast('Escribe el kilometraje del tablero.', 'err'); return; }
+  if (!hora) { toast('Escribe la hora de llegada.', 'err'); return; }
+  try {
+    const abierto = await miViajeAbierto();
+    if (!abierto) { toast('No tienes ningún viaje abierto.', 'err'); vRegistros(); return; }
+    if (km < abierto.kmSalida) {
+      toast(`La llegada no puede ser menor que la salida (${abierto.kmSalida} km).`, 'err');
+      return;
+    }
+    const r = await llegarDeViaje(abierto.id, km, hora);
+    closeSheet();
+    toast(`Viaje registrado · ${r.km} km en ${durLabel(r.minutos)}`, 'ok');
+    vRegistros();
+  } catch (err) {
+    toast('No se pudo guardar: ' + err.message, 'err');
+  }
 }
 
 function errView(err) {

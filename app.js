@@ -155,7 +155,7 @@ async function loadSession(user) {
     uid: user.uid, employeeId: empId, pid: 'emp:'+empId,
     name: e.name, email: e.email, store: e.store,
     rate: Number(e.hourlyRate||0), jobTitle,
-    canPedidos: !!e.canPedidos, hireDate: e.hireDate
+    canPedidos: !!e.canPedidos, canRegistros: !!e.canRegistros, hireDate: e.hireDate
   };
 
   // Las reglas del chat resuelven la identidad por aquí.
@@ -242,6 +242,75 @@ const PED_ESTADO = {
   enviado:  { label:'Enviado',  badge:'b-amber' },
   recibido: { label:'Recibido', badge:'b-green' }
 };
+
+// ── Registros de viaje (kilometraje a las farmacias) ──
+
+async function miViajeAbierto() {
+  const snap = await db.collection('Registros')
+    .where('employeeId','==',ME.employeeId)
+    .where('status','==','en-ruta').get();
+  if (snap.empty) return null;
+  const abiertos = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+    .sort((a,b) => (b.horaSalida?.toMillis?.()||0) - (a.horaSalida?.toMillis?.()||0));
+  return abiertos[0];
+}
+
+async function misViajes(limite) {
+  const snap = await db.collection('Registros')
+    .where('employeeId','==',ME.employeeId).get();
+  return snap.docs.map(d => ({ id:d.id, ...d.data() }))
+    .sort((a,b) => String(b.date).localeCompare(String(a.date))
+      || (b.horaSalida?.toMillis?.()||0) - (a.horaSalida?.toMillis?.()||0))
+    .slice(0, limite || 20);
+}
+
+/** Los carros de la tienda y dónde quedó el cuentakilómetros de cada uno. */
+async function carrosDeTienda() {
+  const snap = await db.collection('Registros').where('store','==',ME.store).get();
+  const regs = snap.docs.map(d => d.data())
+    .sort((a,b) => String(b.date).localeCompare(String(a.date))
+      || (b.horaSalida?.toMillis?.()||0) - (a.horaSalida?.toMillis?.()||0));
+  const carros = {};
+  regs.forEach(r => {
+    const v = (r.vehiculo || '').trim();
+    if (!v) return;
+    if (!(v in carros)) carros[v] = null;
+    if (carros[v] === null && r.status === 'completado' && r.kmLlegada) carros[v] = r.kmLlegada;
+  });
+  return carros;   // { 'Toyota blanco': 45230.5, ... }
+}
+
+async function salirDeViaje(vehiculo, kmSalida, horaSalida) {
+  const ref = await db.collection('Registros').add({
+    employeeId: ME.employeeId, employeeName: ME.name, store: ME.store,
+    vehiculo, date: todayStr(),
+    kmSalida, horaSalida,
+    kmLlegada: null, horaLlegada: null, km: null, minutos: null,
+    status: 'en-ruta',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  return ref.id;
+}
+
+async function llegarDeViaje(id, kmLlegada, horaLlegada) {
+  const doc = await db.collection('Registros').doc(id).get();
+  if (!doc.exists) throw new Error('Ese viaje ya no existe');
+  const r = doc.data();
+  const km = Math.round((kmLlegada - r.kmSalida) * 10) / 10;
+  const minutos = r.horaSalida && horaLlegada
+    ? Math.max(0, Math.round((horaLlegada.toMillis() - r.horaSalida.toMillis()) / 60000))
+    : null;
+  await db.collection('Registros').doc(id).update({
+    kmLlegada, horaLlegada, km, minutos, status: 'completado'
+  });
+  return { km, minutos };
+}
+
+function durLabel(min) {
+  if (min == null) return '—';
+  const h = Math.floor(min/60), m = min%60;
+  return h ? `${h} h ${String(m).padStart(2,'0')} min` : `${m} min`;
+}
 
 // ── Horario ──
 // Un documento por semana y tienda; el colaborador sólo pinta su fila.
