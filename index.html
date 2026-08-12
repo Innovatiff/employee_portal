@@ -12,7 +12,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%234f46e5'/%3E%3Cg transform='translate(2.8 8.03) scale(0.726)'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M8.6 27C7.6 15.4 15.4 5.4 26.6 5.4C33.4 5.4 37.6 9.2 39 14.3L46.3 16.9C49.5 18.1 49.9 21.3 46.7 25.5C44.9 27.9 42.7 29.6 40.5 30.4C41.9 27.6 41.7 25 40.5 23.6C38.7 21.7 36.1 21.2 33.7 22C32.1 23.8 30.7 26 29.3 28.2C27.7 30.7 26.3 33.8 25 38.6L10.6 33.2C9.2 31.2 8.7 29 8.6 27ZM28.9 13.3C31.1 12.3 33.7 13.1 34.3 15.1C33.1 16.5 30.5 16.5 28.9 15.3Z'/%3E%3C/g%3E%3C/svg%3E">
 <title>El Águila — Portal</title>
 <link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script type="module" src="https://unpkg.com/ionicons@8.0.13/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@8.0.13/dist/ionicons/ionicons.js"></script>
 </head>
 <body>
 
@@ -31,7 +32,7 @@
       <h2>Inicia sesión</h2>
       <p>Con el correo que registró tu gerente.</p>
 
-      <div class="alert err" id="loginAlert"><i class="fa-solid fa-circle-exclamation"></i><span id="loginAlertMsg"></span></div>
+      <div class="alert err" id="loginAlert"><ion-icon name="alert-circle-outline"></ion-icon><span id="loginAlertMsg"></span></div>
 
       <form onsubmit="doLogin(event)">
         <div class="field">
@@ -42,11 +43,11 @@
           <label>Contraseña</label>
           <div class="pw-wrap">
             <input type="password" id="pass" placeholder="Tu contraseña" required autocomplete="current-password">
-            <button type="button" class="pw-eye" onclick="togglePw()"><i class="fa-solid fa-eye" id="pwIco"></i></button>
+            <button type="button" class="pw-eye" onclick="togglePw()"><ion-icon name="eye-outline" id="pwIco"></ion-icon></button>
           </div>
         </div>
         <button type="submit" class="btn btn-primary btn-block" id="loginBtn" style="margin-top:6px">
-          <i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar
+          <ion-icon name="log-in-outline"></ion-icon> Entrar
         </button>
       </form>
 
@@ -71,7 +72,7 @@
       <span class="sub" id="barSub"></span>
     </div>
     <button class="bell" id="bell" onclick="go('grupo')" aria-label="Avisos" hidden>
-      <i class="fa-solid fa-bell"></i><span class="bell-dot" id="bellDot"></span>
+      <ion-icon name="notifications-outline"></ion-icon><span class="bell-dot" id="bellDot"></span>
     </button>
     <div id="barAva" onclick="showPerfil()" style="cursor:pointer"></div>
   </header>
@@ -84,7 +85,7 @@
 <!-- Conversación a pantalla completa -->
 <div class="thread" id="thread">
   <div class="thread-bar">
-    <button class="back" onclick="closeThread()"><i class="fa-solid fa-chevron-left"></i></button>
+    <button class="back" onclick="closeThread()"><ion-icon name="chevron-back-outline"></ion-icon></button>
     <div id="threadAva"></div>
     <div style="flex:1;min-width:0">
       <div class="thread-n" id="threadN"></div>
@@ -113,7 +114,7 @@ function togglePw() {
   const i = document.getElementById('pass'), c = document.getElementById('pwIco');
   const show = i.type === 'password';
   i.type = show ? 'text' : 'password';
-  c.className = show ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+  c.setAttribute('name', show ? 'eye-off-outline' : 'eye-outline');
 }
 function loginErr(msg) {
   const a = document.getElementById('loginAlert');
@@ -131,14 +132,14 @@ async function doLogin(e) {
   document.getElementById('loginAlert').className = 'alert';
   const btn = document.getElementById('loginBtn');
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Entrando...';
+  btn.innerHTML = '<ion-icon name="sync-outline" class="gira"></ion-icon> Entrando...';
   try {
     await auth.signInWithEmailAndPassword(
       document.getElementById('email').value.trim(),
       document.getElementById('pass').value);
   } catch (err) {
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar';
+    btn.innerHTML = '<ion-icon name="log-in-outline"></ion-icon> Entrar';
     loginErr({
       'auth/user-not-found':    'No existe una cuenta con ese correo.',
       'auth/wrong-password':    'Contraseña incorrecta.',
@@ -185,24 +186,24 @@ auth.onAuthStateChanged(async user => {
     loginErr(err.message);
     const btn = document.getElementById('loginBtn');
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-arrow-right-to-bracket"></i> Entrar';
+    btn.innerHTML = '<ion-icon name="log-in-outline"></ion-icon> Entrar';
   }
 });
 
 // ══════════ Navegación ══════════
 const TABS = [
-  { id:'inicio',   ico:'fa-house',              lbl:'Inicio'   },
-  { id:'horas',    ico:'fa-clock',              lbl:'Horas'    },
-  { id:'pagos',    ico:'fa-file-invoice-dollar',lbl:'Pagos'    },
-  { id:'permisos', ico:'fa-calendar-days',      lbl:'Permisos' },
-  { id:'grupo',    ico:'fa-comments',           lbl:'Grupo'    }
+  { id:'inicio',   ico:'home-outline',              lbl:'Inicio'   },
+  { id:'horas',    ico:'time-outline',              lbl:'Horas'    },
+  { id:'pagos',    ico:'receipt-outline',lbl:'Pagos'    },
+  { id:'permisos', ico:'calendar-outline',      lbl:'Permisos' },
+  { id:'grupo',    ico:'chatbubbles-outline',           lbl:'Grupo'    }
 ];
 let TAB = 'inicio';
 
 function buildTabs() {
   document.getElementById('tabbar').innerHTML = TABS.map(t =>
     `<button class="tab ${t.id===TAB?'on':''}" data-t="${t.id}" onclick="go('${t.id}')">
-       <i class="fa-solid ${t.ico}"></i><span>${t.lbl}</span></button>`).join('');
+       <ion-icon name="${t.ico}"></ion-icon><span>${t.lbl}</span></button>`).join('');
 }
 
 const TITLES = {
@@ -264,36 +265,36 @@ async function vInicio() {
 
       <div class="section-t">Período actual · ${perLabel(p)}</div>
       <div class="kpis">
-        <div class="kpi"><div class="kpi-ico ico-p"><i class="fa-solid fa-clock"></i></div>
+        <div class="kpi"><div class="kpi-ico ico-p"><ion-icon name="time-outline"></ion-icon></div>
           <div class="kpi-l">Horas</div><div class="kpi-v">${horas.toFixed(2)}</div></div>
-        <div class="kpi"><div class="kpi-ico ico-c"><i class="fa-solid fa-calendar-check"></i></div>
+        <div class="kpi"><div class="kpi-ico ico-c"><ion-icon name="calendar-outline"></ion-icon></div>
           <div class="kpi-l">Días</div><div class="kpi-v">${dias}</div></div>
-        <div class="kpi"><div class="kpi-ico ico-g"><i class="fa-solid fa-sack-dollar"></i></div>
+        <div class="kpi"><div class="kpi-ico ico-g"><ion-icon name="cash-outline"></ion-icon></div>
           <div class="kpi-l">Estimado</div><div class="kpi-v" style="font-size:19px">${money(estim)}</div></div>
-        <div class="kpi"><div class="kpi-ico ico-a"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="kpi"><div class="kpi-ico ico-a"><ion-icon name="hourglass-outline"></ion-icon></div>
           <div class="kpi-l">Tarifa</div><div class="kpi-v" style="font-size:19px">${money(ME.rate)}</div></div>
       </div>
 
       <div class="section-t">Accesos</div>
       <div class="card">
         <div class="row row-link" onclick="go('permisos');openPermisoSheet()">
-          <div class="kpi-ico ico-a" style="margin:0"><i class="fa-solid fa-plane-departure"></i></div>
+          <div class="kpi-ico ico-a" style="margin:0"><ion-icon name="airplane-outline"></ion-icon></div>
           <div class="row-main"><div class="row-t">Solicitar permiso</div>
             <div class="row-s">Vacaciones, enfermedad o personal</div></div>
-          <i class="fa-solid fa-chevron-right chev"></i>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
         </div>
         ${ME.canPedidos ? `
         <div class="row row-link" onclick="go('pedidos')">
-          <div class="kpi-ico ico-p" style="margin:0"><i class="fa-solid fa-clipboard-list"></i></div>
+          <div class="kpi-ico ico-p" style="margin:0"><ion-icon name="clipboard-outline"></ion-icon></div>
           <div class="row-main"><div class="row-t">Pedidos</div>
             <div class="row-s">Listas de ${storeShort(ME.store)}</div></div>
-          <i class="fa-solid fa-chevron-right chev"></i>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
         </div>` : ''}
         <div class="row row-link" onclick="go('grupo')">
-          <div class="kpi-ico ico-c" style="margin:0"><i class="fa-solid fa-bullhorn"></i></div>
+          <div class="kpi-ico ico-c" style="margin:0"><ion-icon name="megaphone-outline"></ion-icon></div>
           <div class="row-main"><div class="row-t">Anuncios y mensajes</div>
             <div class="row-s">Novedades del equipo</div></div>
-          <i class="fa-solid fa-chevron-right chev"></i>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
         </div>
       </div>`;
   } catch (err) { errView(err); }
@@ -302,7 +303,7 @@ async function vInicio() {
 function errView(err) {
   console.error(err);
   el().innerHTML = `<div class="card"><div class="empty">
-    <i class="fa-solid fa-triangle-exclamation"></i>
+    <ion-icon name="warning-outline"></ion-icon>
     <p>${esc(err.message || 'No se pudieron cargar los datos.')}</p></div></div>`;
 }
 
@@ -324,10 +325,10 @@ async function vHoras() {
 
     el().innerHTML = `
       <div class="pernav">
-        <button onclick="horasIdx--;vHoras()"><i class="fa-solid fa-chevron-left"></i></button>
+        <button onclick="horasIdx--;vHoras()"><ion-icon name="chevron-back-outline"></ion-icon></button>
         <div class="lbl"><b>${perLabel(p)}</b>
           <span>${horasIdx === perIndex(new Date()) ? 'Período actual' : parseD(p.end).getFullYear()}</span></div>
-        <button onclick="horasIdx++;vHoras()"><i class="fa-solid fa-chevron-right"></i></button>
+        <button onclick="horasIdx++;vHoras()"><ion-icon name="chevron-forward-outline"></ion-icon></button>
       </div>
 
       <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
@@ -337,7 +338,7 @@ async function vHoras() {
       </div>
 
       ${fechas.length === 0
-        ? `<div class="card"><div class="empty"><i class="fa-regular fa-clock"></i>
+        ? `<div class="card"><div class="empty"><ion-icon name="time-outline"></ion-icon>
              <p>No hay turnos registrados en este período.</p></div></div>`
         : `<div class="card">${fechas.map(f => {
             const t = porDia[f];
@@ -366,16 +367,16 @@ async function vPagos() {
 
     el().innerHTML = `
       <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
-        <div class="kpi"><div class="kpi-ico ico-g"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="kpi"><div class="kpi-ico ico-g"><ion-icon name="checkmark-circle-outline"></ion-icon></div>
           <div class="kpi-l">Recibido</div><div class="kpi-v" style="font-size:19px">${money(totalAno)}</div></div>
-        <div class="kpi"><div class="kpi-ico ico-a"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="kpi"><div class="kpi-ico ico-a"><ion-icon name="hourglass-outline"></ion-icon></div>
           <div class="kpi-l">Pendiente</div>
           <div class="kpi-v" style="font-size:19px">${money(list.filter(s=>s.status!=='paid').reduce((s,x)=>s+(x.gross||0),0))}</div></div>
       </div>
 
       <div class="section-t">Recibos</div>
       ${list.length === 0
-        ? `<div class="card"><div class="empty"><i class="fa-solid fa-file-invoice-dollar"></i>
+        ? `<div class="card"><div class="empty"><ion-icon name="receipt-outline"></ion-icon>
              <p>Todavía no tienes recibos.<br><span style="font-size:12.5px">Aparecerán cuando tu gerente cierre el período.</span></p></div></div>`
         : `<div class="card">${list.map(s => {
             const pagado = s.status === 'paid';
@@ -426,11 +427,11 @@ async function vPermisos() {
     const list = await myTimeOff();
     el().innerHTML = `
       <button class="btn btn-primary btn-block" onclick="openPermisoSheet()" style="margin-bottom:16px">
-        <i class="fa-solid fa-plus"></i> Solicitar permiso
+        <ion-icon name="add-outline"></ion-icon> Solicitar permiso
       </button>
 
       ${list.length === 0
-        ? `<div class="card"><div class="empty"><i class="fa-solid fa-calendar-days"></i>
+        ? `<div class="card"><div class="empty"><ion-icon name="calendar-outline"></ion-icon>
              <p>No tienes solicitudes.</p></div></div>`
         : `<div class="card">${list.map(t => {
             const s = parseD(t.startDate), e = parseD(t.endDate);
@@ -445,7 +446,7 @@ async function vPermisos() {
                 <div class="row-t" style="margin-top:7px">${fDateShort(t.startDate)} – ${fDate(t.endDate)}</div>
                 <div class="row-s">${dias} ${dias===1?'día':'días'}${t.note?' · '+esc(t.note):''}</div>
                 ${t.status==='denied' && t.denyReason
-                  ? `<div class="motivo"><i class="fa-solid fa-circle-info"></i>
+                  ? `<div class="motivo"><ion-icon name="information-circle-outline"></ion-icon>
                        <div><b>Motivo:</b> ${esc(t.denyReason)}</div></div>` : ''}
               </div>
             </div>`;
@@ -495,7 +496,7 @@ async function enviarPermiso() {
 // ══════════ Pedidos ══════════
 async function vPedidos() {
   if (!ME.canPedidos) {
-    el().innerHTML = `<div class="card"><div class="empty"><i class="fa-solid fa-lock"></i>
+    el().innerHTML = `<div class="card"><div class="empty"><ion-icon name="lock-closed-outline"></ion-icon>
       <p>No estás asignado para gestionar pedidos.<br>
       <span style="font-size:12.5px">Pídeselo a tu gerente.</span></p></div></div>`;
     return;
@@ -505,16 +506,16 @@ async function vPedidos() {
     const list = await storePedidos();
     el().innerHTML = `
       <button class="btn btn-primary btn-block" onclick="openPedidoSheet()" style="margin-bottom:16px">
-        <i class="fa-solid fa-plus"></i> Nuevo pedido
+        <ion-icon name="add-outline"></ion-icon> Nuevo pedido
       </button>
       ${list.length === 0
-        ? `<div class="card"><div class="empty"><i class="fa-solid fa-clipboard-list"></i>
+        ? `<div class="card"><div class="empty"><ion-icon name="clipboard-outline"></ion-icon>
              <p>Aún no hay pedidos.</p></div></div>`
         : `<div class="card">${list.map(p => {
             const e = PED_ESTADO[p.status||'borrador'] || PED_ESTADO.borrador;
             const n = (p.items||[]).length;
             return `<div class="row row-link" onclick="verPedido('${p.id}')">
-              <div class="kpi-ico ico-p" style="margin:0"><i class="fa-solid fa-clipboard-list"></i></div>
+              <div class="kpi-ico ico-p" style="margin:0"><ion-icon name="clipboard-outline"></ion-icon></div>
               <div class="row-main">
                 <div class="row-t">${esc(p.title||'Sin título')}</div>
                 <div class="row-s">${fDate(p.date)} · ${n} ${n===1?'artículo':'artículos'}</div>
@@ -563,7 +564,7 @@ function openPedidoSheet(id) {
       </select></div>
     <div class="field">
       <label style="display:flex;align-items:center;justify-content:space-between">Artículos
-        <button class="btn btn-sm btn-ghost" onclick="addItem()"><i class="fa-solid fa-plus"></i> Agregar</button></label>
+        <button class="btn btn-sm btn-ghost" onclick="addItem()"><ion-icon name="add-outline"></ion-icon> Agregar</button></label>
       <div id="items"></div>
     </div>
     <button class="btn btn-primary btn-block" id="pedBtn" onclick="guardarPedido()">Guardar</button>
@@ -579,7 +580,7 @@ function addItem(it) {
     `<div class="item-row">
       <input type="text" class="i-n" value="${esc(v.name)}" placeholder="Artículo">
       <input type="text" class="i-q" value="${esc(v.qty)}" placeholder="Cant.">
-      <button class="del" onclick="this.parentNode.remove()"><i class="fa-solid fa-xmark"></i></button>
+      <button class="del" onclick="this.parentNode.remove()"><ion-icon name="close-outline"></ion-icon></button>
     </div>`);
 }
 
@@ -691,7 +692,7 @@ function paintConvs() {
   };
   el().innerHTML = `
     <div class="conv" onclick="openAnuncios()">
-      <div class="conv-ava anuncios"><i class="fa-solid fa-bullhorn"></i></div>
+      <div class="conv-ava anuncios"><ion-icon name="megaphone-outline"></ion-icon></div>
       <div class="conv-main">
         <div class="conv-top"><span class="conv-n">Anuncios Generales${punto(ANUNCIOS)}</span>
           <span class="conv-t">${a.lastAt?relTime(a.lastAt):''}</span></div>
@@ -724,18 +725,18 @@ function mountThread() {
   document.getElementById('threadN').textContent = activeChat.title;
   document.getElementById('threadS').textContent = activeChat.sub;
   document.getElementById('threadAva').innerHTML = activeChat.type==='anuncios'
-    ? '<div class="conv-ava anuncios" style="width:38px;height:38px;font-size:14px"><i class="fa-solid fa-bullhorn"></i></div>'
+    ? '<div class="conv-ava anuncios" style="width:38px;height:38px;font-size:14px"><ion-icon name="megaphone-outline"></ion-icon></div>'
     : avatar(activeChat.title, 38);
 
   document.getElementById('composeWrap').innerHTML = activeChat.type==='anuncios'
-    ? `<div class="locked"><i class="fa-solid fa-bullhorn"></i> Sólo la gerencia publica anuncios.</div>`
+    ? `<div class="locked"><ion-icon name="megaphone-outline"></ion-icon> Sólo la gerencia publica anuncios.</div>`
     : `<div class="compose">
-         <textarea id="msgIn" rows="1" placeholder="Escribe un mensaje..."></textarea>
-         <button class="send" onclick="enviarMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+         <textarea id="msgIn" rows="1" placeholder="Escribe un mensaje..." oninput="autoCrecer(this)"></textarea>
+         <button class="send" onclick="enviarMsg()"><ion-icon name="send-outline"></ion-icon></button>
        </div>`;
 
   document.getElementById('msgs').innerHTML =
-    '<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i></div>';
+    '<div class="empty"><ion-icon name="sync-outline" class="gira"></ion-icon></div>';
   document.getElementById('thread').classList.add('on');
 
   if (unsubMsgs) unsubMsgs();
@@ -751,16 +752,26 @@ function closeThread() {
 function paintMsgs(list) {
   const box = document.getElementById('msgs');
   if (!list.length) {
-    box.innerHTML = `<div class="empty"><i class="fa-regular fa-comment-dots"></i>
+    box.innerHTML = `<div class="empty"><ion-icon name="chatbubble-ellipses-outline"></ion-icon>
       <p>${activeChat.type==='anuncios'?'Todavía no hay anuncios.':'Escribe el primer mensaje.'}</p></div>`;
     return;
   }
-  let html = '', dia = '';
-  list.forEach(m => {
+  // No te arrastra al final si estás leyendo hacia arriba.
+  const alFinal = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
+
+  let html = '', dia = '', prev = null;
+  list.forEach((m, i) => {
     const d = m.createdAt?.toDate?.() || new Date();
     const k = toDateStr(d);
-    if (k !== dia) { dia = k;
+    let diaNuevo = false;
+    if (k !== dia) { dia = k; diaNuevo = true;
       html += `<div class="day"><span>${k===todayStr()?'Hoy':fDate(k)}</span></div>`; }
+    // Mensajes seguidos de la misma persona se agrupan
+    const seguido = !diaNuevo && prev && prev.senderId === m.senderId
+      && (d - (prev.createdAt?.toDate?.() || d)) < 5*60*1000;
+    const sig = list[i+1];
+    const ultimo = !sig || sig.senderId !== m.senderId;
+    prev = m;
     if (activeChat.type === 'anuncios') {
       html += `<div class="anuncio">
         <div class="anuncio-h">${avatar(m.senderName,22)}<b>${esc(m.senderName)}</b>
@@ -768,13 +779,21 @@ function paintMsgs(list) {
         <div class="anuncio-b">${esc(m.text).replace(/\n/g,'<br>')}</div></div>`;
     } else {
       const mio = m.senderId === ME.pid;
-      html += `<div class="bub-row ${mio?'me':''}"><div class="bub">
+      html += `<div class="bub-row ${mio?'me':''} ${seguido?'seguido':''} ${ultimo?'ultimo':''}">
+        ${mio || seguido ? '' : `<div class="bub-quien">${esc(m.senderName||'')}</div>`}
+        <div class="bub">
         <div class="txt">${esc(m.text).replace(/\n/g,'<br>')}</div>
         <div class="at">${fTime(d)}</div></div></div>`;
     }
   });
   box.innerHTML = html;
-  box.scrollTop = box.scrollHeight;
+  if (alFinal) box.scrollTop = box.scrollHeight;
+}
+
+// El cuadro crece con el mensaje en vez de quedarse en una línea
+function autoCrecer(t) {
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 120) + 'px';
 }
 
 async function enviarMsg() {
@@ -809,9 +828,9 @@ function showPerfil() {
         <div class="row-s">${fDate(ME.hireDate)}</div></div>
     </div>
     <button class="btn btn-ghost btn-block" onclick="cambiarPass()" style="margin-bottom:9px">
-      <i class="fa-solid fa-key"></i> Cambiar contraseña</button>
+      <ion-icon name="key-outline"></ion-icon> Cambiar contraseña</button>
     <button class="btn btn-block" style="background:var(--red-soft);color:#9f1239" onclick="logout()">
-      <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión</button>`);
+      <ion-icon name="log-out-outline"></ion-icon> Cerrar sesión</button>`);
 }
 
 function cambiarPass() {

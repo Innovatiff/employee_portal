@@ -29,8 +29,8 @@ const auth = firebase.auth();
 
 // ── Tiendas ──
 const STORES = {
-  '1': { name:'Tienda Despensas', short:'Despensas', color:'#b45309', soft:'#fef3c7', icon:'fa-basket-shopping' },
-  '2': { name:'Tienda Cocina',    short:'Cocina',    color:'#0e7490', soft:'#cffafe', icon:'fa-utensils' }
+  '1': { name:'Tienda Despensas', short:'Despensas', color:'#b45309', soft:'#fef3c7', icon:'basket-outline' },
+  '2': { name:'Tienda Cocina',    short:'Cocina',    color:'#0e7490', soft:'#cffafe', icon:'restaurant-outline' }
 };
 const storeName  = id => (STORES[id]||{}).name  || '—';
 const storeShort = id => (STORES[id]||{}).short || '—';
@@ -108,10 +108,10 @@ function avatar(n, size) {
 function toast(msg, kind) {
   let host = document.querySelector('.toasts');
   if (!host) { host=document.createElement('div'); host.className='toasts'; document.body.appendChild(host); }
-  const ic = { ok:'fa-circle-check', err:'fa-circle-exclamation', info:'fa-circle-info' }[kind||'info'];
+  const ic = { ok:'checkmark-circle-outline', err:'alert-circle-outline', info:'information-circle-outline' }[kind||'info'];
   const el = document.createElement('div');
   el.className = 'toast ' + (kind||'info');
-  el.innerHTML = `<i class="fa-solid ${ic}"></i><span>${esc(msg)}</span>`;
+  el.innerHTML = `<ion-icon name="${ic}"></ion-icon><span>${esc(msg)}</span>`;
   host.appendChild(el);
   setTimeout(() => { el.style.opacity='0'; setTimeout(()=>el.remove(),300); }, 3200);
 }
@@ -372,7 +372,7 @@ function avisarInstalar() {
   const bar = document.createElement('div');
   bar.className = 'push-ask';
   bar.innerHTML = `
-    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+    <ion-icon name="share-outline"></ion-icon>
     <div style="flex:1">
       <div class="push-ask-t">Instala la app para recibir avisos</div>
       <div class="push-ask-s">
@@ -380,7 +380,7 @@ function avisarInstalar() {
         Luego abre El Águila desde el icono nuevo.
       </div>
     </div>
-    <button class="push-no" aria-label="Ahora no"><i class="fa-solid fa-xmark"></i></button>`;
+    <button class="push-no" aria-label="Ahora no"><ion-icon name="close-outline"></ion-icon></button>`;
   bar.querySelector('.push-no').onclick = () => {
     localStorage.setItem('elaguila_instalar_no', '1');
     bar.remove();
@@ -402,13 +402,13 @@ function setupPush() {
   const bar = document.createElement('div');
   bar.className = 'push-ask';
   bar.innerHTML = `
-    <i class="fa-solid fa-bell"></i>
+    <ion-icon name="notifications-outline"></ion-icon>
     <div style="flex:1">
       <div class="push-ask-t">Avisos en tu teléfono</div>
       <div class="push-ask-s">Entérate de los mensajes sin abrir la app</div>
     </div>
     <button class="push-si">Activar</button>
-    <button class="push-no" aria-label="Ahora no"><i class="fa-solid fa-xmark"></i></button>`;
+    <button class="push-no" aria-label="Ahora no"><ion-icon name="close-outline"></ion-icon></button>`;
   bar.querySelector('.push-si').onclick = async () => {
     const ok = await activarPush();
     toast(ok ? 'Avisos activados' : 'No se pudieron activar', ok ? 'ok' : 'err');

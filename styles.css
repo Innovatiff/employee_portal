@@ -197,9 +197,9 @@ select { appearance:none; padding-right:38px;
   cursor:pointer; position:relative;
   transition:color .2s ease;
 }
-.tab i { font-size:19px; transition:transform .25s var(--back); }
+.tab ion-icon { font-size:19px; transition:transform .25s var(--back); }
 .tab.on { color:var(--primary); }
-.tab.on i { transform:translateY(-2px) scale(1.08); }
+.tab.on ion-icon { transform:translateY(-2px) scale(1.08); }
 .tab.on::before {
   content:''; position:absolute; top:0; left:50%; transform:translateX(-50%);
   width:26px; height:3px; border-radius:0 0 3px 3px; background:var(--primary);
@@ -222,7 +222,7 @@ select { appearance:none; padding-right:38px;
   padding:14px 18px; border-bottom:1px solid var(--line);
   font-size:13.5px; font-weight:650;
 }
-.card-head i { color:var(--primary); }
+.card-head ion-icon { color:var(--primary); }
 .card-head .right { margin-left:auto; font-weight:500; font-size:12.5px; color:var(--muted); }
 
 .section-t {
@@ -298,11 +298,11 @@ select { appearance:none; padding-right:38px;
   background:var(--red-soft); border-left:3px solid var(--red);
   border-radius:9px; font-size:12.5px; line-height:1.5; color:#9f1239;
 }
-.motivo i { margin-top:2px; font-size:11px; }
+.motivo ion-icon { margin-top:2px; font-size:11px; }
 
 /* ── Vacíos y carga ── */
 .empty { text-align:center; padding:46px 22px; color:var(--muted); }
-.empty i { font-size:32px; color:var(--light); display:block; margin-bottom:12px; }
+.empty ion-icon { font-size:32px; color:var(--light); display:block; margin:0 auto 12px; }
 .empty p { font-size:14px; }
 
 .skel {
@@ -412,6 +412,19 @@ select { appearance:none; padding-right:38px;
 .bub .at  { font-size:10px; color:var(--light); text-align:right; margin-top:3px; }
 .bub-row.me .bub .at { color:rgba(255,255,255,.7); }
 
+/* Mensajes seguidos de la misma persona: se leen como un bloque */
+.bub-row { flex-direction:column; align-items:flex-start; }
+.bub-row.me { align-items:flex-end; }
+.bub-quien {
+  font-size:11px; font-weight:700; color:var(--primary);
+  padding:0 4px 3px;
+}
+.bub-row.seguido { margin-bottom:3px; }
+.bub-row.ultimo  { margin-bottom:11px; }
+.bub-row.seguido .bub      { border-top-left-radius:6px; }
+.bub-row.seguido.me .bub   { border-top-left-radius:16px; border-top-right-radius:6px; }
+.bub-row:not(.ultimo) .bub .at { display:none; }
+
 .anuncio {
   background:#fff; border:1px solid var(--line); border-left:3px solid var(--primary);
   border-radius:var(--r); padding:13px 15px; margin-bottom:11px;
@@ -446,9 +459,9 @@ select { appearance:none; padding-right:38px;
   box-shadow:var(--sh-lg); margin-top:8px;
   animation:up .3s var(--back) both;
 }
-.toast i { font-size:15px; }
-.toast.ok i  { color:#6ee7b7; }
-.toast.err i { color:#fda4af; }
+.toast ion-icon { font-size:15px; }
+.toast.ok ion-icon  { color:#6ee7b7; }
+.toast.err ion-icon { color:#fda4af; }
 
 /* ══════════ Artículos de pedido ══════════ */
 .item-row { display:grid; grid-template-columns:1fr 74px 34px; gap:8px; margin-bottom:8px; align-items:center; }
@@ -481,7 +494,7 @@ select { appearance:none; padding-right:38px;
   -webkit-tap-highlight-color:transparent;
 }
 .bell.on { color:var(--primary); border-color:var(--primary); }
-.bell.on i { animation:campanita 1.6s var(--ease) 2; transform-origin:50% 12%; }
+.bell.on ion-icon { animation:campanita 1.6s var(--ease) 2; transform-origin:50% 12%; }
 @keyframes campanita {
   0%,60%,100% { transform:rotate(0); }
   10% { transform:rotate(13deg); }
@@ -518,7 +531,7 @@ select { appearance:none; padding-right:38px;
   60%     { box-shadow:0 0 0 5px rgba(225,29,72,0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .conv-dot, .tab.nuevo::after, .bell.on i { animation:none; }
+  .conv-dot, .tab.nuevo::after, .bell.on ion-icon { animation:none; }
 }
 
 /* Ofrecimiento de activar los avisos del sistema */
@@ -530,7 +543,7 @@ select { appearance:none; padding-right:38px;
   animation:subeSuave .35s var(--ease) both;
 }
 @keyframes subeSuave { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:none; } }
-.push-ask > i { font-size:17px; flex-shrink:0; }
+.push-ask > ion-icon { font-size:17px; flex-shrink:0; }
 .push-ask-t { font-size:13.5px; font-weight:700; }
 .push-ask-s { font-size:11.5px; color:var(--muted); margin-top:1px; }
 .push-si {
@@ -542,3 +555,19 @@ select { appearance:none; padding-right:38px;
   flex-shrink:0; width:30px; height:30px; border:none; border-radius:9px;
   background:none; color:var(--muted); font-size:14px; cursor:pointer;
 }
+
+/* ══════════════════════════════════════
+   Iconos (ionicons)
+   ══════════════════════════════════════ */
+ion-icon {
+  /* Heredan el tamaño del texto que acompañan, y se sientan sobre la línea
+     base como lo hacía la tipografía de iconos anterior. */
+  font-size: 1.05em;
+  vertical-align: -0.15em;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+/* Sustituye a la clase de giro de la librería anterior */
+.gira { animation: girar 900ms linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .gira { animation-duration: 2.4s; } }
