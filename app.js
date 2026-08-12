@@ -674,3 +674,67 @@ function setupPush() {
   };
   document.querySelector('.appbar').insertAdjacentElement('afterend', bar);
 }
+
+// ══ Tareas del día (checklists de mi tienda) ══
+
+async function getTareasHoy() {
+  const snap = await db.collection('Tareas').where('store','==',ME.store).get();
+  const dow = new Date().getDay();
+  return snap.docs.map(d => ({ id:d.id, ...d.data() }))
+    .filter(t => !Array.isArray(t.dias) || !t.dias.length || t.dias.includes(dow))
+    .sort((a,b) => String(a.titulo||'').localeCompare(String(b.titulo||'')));
+}
+
+async function getHechosHoy() {
+  const snap = await db.collection('TareasHechas')
+    .where('date','==',todayStr()).where('store','==',ME.store).get();
+  const por = {};
+  snap.docs.forEach(d => { por[d.data().tareaId] = { id:d.id, ...d.data() }; });
+  return por;
+}
+
+// Marcar o desmarcar un renglón; el documento del día se crea solo.
+async function marcarItem(tareaId, idx, hecho) {
+  const quien = hecho
+    ? { nombre: ME.name, pid: ME.pid, at: Date.now() }
+    : firebase.firestore.FieldValue.delete();
+  await db.collection('TareasHechas').doc(tareaId + '_' + todayStr()).set({
+    tareaId, date: todayStr(), store: ME.store, hechos: { [idx]: quien }
+  }, { merge:true });
+}
+
+// ══ Reportes de incidentes ══
+
+async function misReportes() {
+  const snap = await db.collection('Reportes').where('por','==',ME.pid).get();
+  return snap.docs.map(d => ({ id:d.id, ...d.data() }))
+    .sort((a,b) => (b.createdAt?.toMillis?.()||0) - (a.createdAt?.toMillis?.()||0));
+}
+
+// Crear un reporte; si trae foto se reduce y se sube primero.
+async function crearReporte({ texto, file }, onProgreso) {
+  let foto = null, w = 0, h = 0;
+  if (file) {
+    if (file.type && !file.type.startsWith('image/')) throw new Error('Sólo se pueden adjuntar imágenes');
+    if (file.size > 12 * 1024 * 1024) throw new Error('La imagen es demasiado grande');
+    if (onProgreso) onProgreso(null);
+    let blob;
+    try { ({ blob, w, h } = await encogerImagen(file)); }
+    catch (e) { console.warn('se sube original:', e); blob = file; }
+    const nombre = `${Date.now()}_${Math.random().toString(36).slice(2,9)}.jpg`;
+    const ref = firebase.storage().ref(`reportes/${nombre}`);
+    const tarea = ref.put(blob, { contentType: blob.type || 'image/jpeg' });
+    await new Promise((ok, fail) => {
+      tarea.on('state_changed',
+        s => { if (onProgreso && s.totalBytes) onProgreso(Math.round(s.bytesTransferred/s.totalBytes*100)); },
+        fail, ok);
+    });
+    foto = await ref.getDownloadURL();
+  }
+  await db.collection('Reportes').add({
+    por: ME.pid, nombre: ME.name, store: ME.store,
+    texto: String(texto||'').trim(), foto, w, h,
+    date: todayStr(), status: 'nuevo',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}

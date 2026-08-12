@@ -222,7 +222,7 @@ function buildTabs() {
 
 const TITLES = {
   inicio:'Inicio', horas:'Mis Horas', pagos:'Mis Pagos',
-  permisos:'Permisos', grupo:'Grupo', pedidos:'Pedidos', registros:'Registros'
+  permisos:'Permisos', grupo:'Grupo', pedidos:'Pedidos', registros:'Registros', reportes:'Reportes'
 };
 
 function go(tab) {
@@ -233,7 +233,8 @@ function go(tab) {
     ? fDateLong(new Date()) : (ME ? storeName(ME.store) : '');
   stopChatListeners();
   ({ inicio:vInicio, horas:vHoras, pagos:vPagos, permisos:vPermisos,
-     grupo:vGrupo, pedidos:vPedidos, registros:vRegistros }[tab] || vInicio)();
+     grupo:vGrupo, pedidos:vPedidos, registros:vRegistros,
+     reportes:vReportes }[tab] || vInicio)();
 }
 
 const el = () => document.getElementById('view');
@@ -301,6 +302,8 @@ async function vInicio() {
 
       ${turno}
 
+      <div id="tareasHoy"></div>
+
       ${semana}
 
       <div class="section-t">Período actual · ${perLabel(p)}</div>
@@ -337,6 +340,12 @@ async function vInicio() {
             <div class="row-s">Listas de ${storeShort(ME.store)}</div></div>
           <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
         </div>` : ''}
+        <div class="row row-link" onclick="go('reportes')">
+          <div class="kpi-ico" style="margin:0;background:var(--red-soft);color:#be123c"><ion-icon name="warning-outline"></ion-icon></div>
+          <div class="row-main"><div class="row-t">Reportar incidente</div>
+            <div class="row-s">Con foto, directo a la gerencia</div></div>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
+        </div>
         <div class="row row-link" onclick="go('grupo')">
           <div class="kpi-ico ico-c" style="margin:0"><ion-icon name="megaphone-outline"></ion-icon></div>
           <div class="row-main"><div class="row-t">Anuncios y mensajes</div>
@@ -344,7 +353,116 @@ async function vInicio() {
           <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
         </div>
       </div>`;
+    pintarTareasHoy();
   } catch (err) { errView(err); }
+}
+
+// ── Tareas del día (checklist de mi tienda) ──
+let tareasHoy = [], hechosHoy = {};
+async function pintarTareasHoy() {
+  const host = document.getElementById('tareasHoy');
+  if (!host) return;
+  try {
+    [tareasHoy, hechosHoy] = await Promise.all([getTareasHoy(), getHechosHoy()]);
+  } catch (err) { console.warn('tareas', err); return; }
+  if (!tareasHoy.length) { host.innerHTML = ''; return; }
+
+  host.innerHTML = `
+    <div class="section-t">Tareas de hoy</div>
+    ${tareasHoy.map(t => {
+      const h = (hechosHoy[t.id] && hechosHoy[t.id].hechos) || {};
+      const items = t.items || [];
+      const n = items.filter((_,i) => h[i]).length;
+      const pct = items.length ? Math.round(n/items.length*100) : 0;
+      return `<div class="card chk-card ${n===items.length && items.length ? 'lista' : ''}" style="padding:14px 15px">
+        <div class="chk-head"><strong>${esc(t.titulo)}</strong>
+          <div class="chk-progreso"><div class="chk-barra"><span style="width:${pct}%"></span></div>
+            <em>${n}/${items.length}</em></div></div>
+        ${items.map((it, i) => {
+          const q = h[i];
+          return `<label class="chk-item ${q ? 'ok' : ''}">
+            <input type="checkbox" ${q?'checked':''} onchange="toggleTarea('${t.id}',${i},this)">
+            <span class="chk-caja"><ion-icon name="checkmark-outline"></ion-icon></span>
+            <span class="chk-texto">${esc(it)}</span>
+            ${q ? `<span class="chk-quien">${esc((q.nombre||'').split(' ')[0])}</span>` : ''}
+          </label>`;
+        }).join('')}
+      </div>`;
+    }).join('')}`;
+}
+
+async function toggleTarea(tareaId, idx, chk) {
+  chk.disabled = true;
+  try {
+    await marcarItem(tareaId, idx, chk.checked);
+    const doc = hechosHoy[tareaId] || (hechosHoy[tareaId] = { hechos:{} });
+    if (chk.checked) doc.hechos[idx] = { nombre: ME.name, at: Date.now() };
+    else delete doc.hechos[idx];
+    pintarTareasHoy();
+  } catch (err) {
+    chk.checked = !chk.checked; chk.disabled = false;
+    toast('No se pudo guardar: ' + err.message, 'err');
+  }
+}
+
+// ══════════ Reportes de incidentes ══════════
+async function vReportes() {
+  loading(2);
+  try {
+    const lista = await misReportes();
+    el().innerHTML = `
+      <button class="btn btn-primary btn-block" onclick="abrirReporte()" style="margin-bottom:16px">
+        <ion-icon name="warning-outline"></ion-icon> Reportar incidente
+      </button>
+      <div class="section-t">Mis reportes</div>
+      ${lista.length ? lista.map(r => `
+        <div class="card" style="padding:14px 15px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            ${(r.status||'nuevo')==='nuevo'
+              ? '<span class="badge b-amber">Enviado</span>'
+              : '<span class="badge b-green">Revisado por la gerencia</span>'}
+            <span style="margin-left:auto;font-size:12px;color:var(--light)">${fDate(r.date)}</span>
+          </div>
+          <p style="margin:9px 0 0;font-size:14px;line-height:1.55;white-space:pre-wrap">${esc(r.texto||'')}</p>
+          ${r.foto ? `<img src="${r.foto}" alt="Foto" loading="lazy" onclick="verFoto('${r.foto}')"
+            style="margin-top:10px;width:100%;max-width:260px;border-radius:10px;border:1px solid var(--line);aspect-ratio:${(r.w||4)}/${(r.h||3)};object-fit:cover">` : ''}
+        </div>`).join('')
+      : `<div class="card"><div class="empty"><ion-icon name="shield-checkmark-outline"></ion-icon>
+          <p>No has enviado reportes.</p></div></div>`}`;
+  } catch (err) { errView(err); }
+}
+
+function abrirReporte() {
+  openSheet(`
+    <h3>Reportar incidente</h3>
+    <p class="lead">Le llega directo a la gerencia con un aviso.</p>
+    <div class="field"><label>¿Qué pasó?</label>
+      <textarea id="repTxt" rows="4" placeholder="Describe el incidente..."></textarea></div>
+    <div class="field"><label>Foto (opcional)</label>
+      <input type="file" id="repFile" accept="image/*"></div>
+    <button class="btn btn-primary btn-block" id="repBtn" onclick="enviarReporte()">
+      <ion-icon name="send-outline"></ion-icon> Enviar reporte</button>`);
+}
+
+async function enviarReporte() {
+  const texto = document.getElementById('repTxt').value.trim();
+  if (!texto) { toast('Describe lo que pasó.', 'err'); return; }
+  const file = document.getElementById('repFile').files[0] || null;
+  const btn = document.getElementById('repBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<ion-icon name="sync-outline" class="gira"></ion-icon> Enviando...';
+  try {
+    await crearReporte({ texto, file }, pct => {
+      if (pct !== null) btn.innerHTML = `Subiendo foto ${pct}%`;
+    });
+    closeSheet();
+    toast('Reporte enviado a la gerencia', 'ok');
+    vReportes();
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<ion-icon name="send-outline"></ion-icon> Enviar reporte';
+    toast('No se pudo enviar: ' + err.message, 'err');
+  }
 }
 
 // ══════════ Registros de viaje ══════════

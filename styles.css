@@ -798,3 +798,28 @@ ion-icon {
    contra el borde de la tarjeta. */
 .anuncio-rx .rx-bar { left:0; transform:scale(.55); transform-origin:bottom left; }
 .anuncio-rx .rx-wrap.rx-open .rx-bar { transform:scale(1); }
+
+/* ══ Tareas del día ══ */
+.chk-card { margin-bottom:12px; transition:border-color .2s ease, background .2s ease; }
+.chk-card.lista { border-color:var(--green); background:var(--green-soft); }
+.chk-head { display:flex; align-items:center; justify-content:space-between; gap:10px;
+  margin-bottom:8px; flex-wrap:wrap; font-size:14.5px; }
+.chk-progreso { display:flex; align-items:center; gap:7px; }
+.chk-progreso em { font-style:normal; font-size:12px; color:var(--muted); white-space:nowrap; }
+.chk-barra { width:86px; height:6px; border-radius:999px; background:var(--line); overflow:hidden; }
+.chk-barra span { display:block; height:100%; border-radius:999px; background:var(--green);
+  transition:width .35s cubic-bezier(.22,1,.36,1); }
+.chk-item { display:flex; align-items:center; gap:10px; padding:9px 2px; cursor:pointer; }
+.chk-item input { display:none; }
+.chk-caja {
+  width:22px; height:22px; border-radius:7px; border:2px solid var(--line-2);
+  display:grid; place-items:center; color:#fff; flex-shrink:0;
+  transition:background .18s ease, border-color .18s ease;
+}
+.chk-caja ion-icon { font-size:14px; opacity:0; transition:opacity .15s ease; }
+.chk-item.ok .chk-caja { background:var(--green); border-color:var(--green);
+  animation:rxPop .3s cubic-bezier(.34,1.56,.64,1); }
+.chk-item.ok .chk-caja ion-icon { opacity:1; }
+.chk-texto { font-size:14px; flex:1; min-width:0; }
+.chk-item.ok .chk-texto { color:var(--muted); text-decoration:line-through; }
+.chk-quien { font-size:11px; color:var(--light); white-space:nowrap; }
