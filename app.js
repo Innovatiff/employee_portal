@@ -22,7 +22,7 @@ firebase.initializeApp({
 // Clave pública de notificaciones push (VAPID). Firebase Console →
 // Configuración del proyecto → Cloud Messaging → Certificados push web.
 // Vacía = sin avisos con la app cerrada; el resto funciona igual.
-const VAPID_KEY = "";
+const VAPID_KEY = "BDyHLK04-tsVFXfN8sIXgKgGmM0qZpYgoblgKqVLIWgH8J0oktFacUXlTIKt2nFQPMqPmzamcTt3S7zOkIRjB74";
 
 const db   = firebase.firestore();
 const auth = firebase.auth();
