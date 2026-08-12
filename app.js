@@ -238,72 +238,115 @@ const PED_ESTADO = {
 // ── Chat ──
 const ANUNCIOS = 'anuncios';
 
-/**
- * Reduce la foto antes de subirla. Una foto de teléfono ronda los 4 MB, y
- * por datos móviles eso son varios segundos de espera. A 1200 px con
- * calidad 0,68 queda en unos 90 KB: en una burbuja no se nota, y un papel
- * o una etiqueta fotografiada de cerca se siguen leyendo.
- */
-async function encogerImagen(file, maxLado = 1200, calidad = 0.68) {
-  const medidas = (w, h) => {
-    const e = Math.min(1, maxLado / Math.max(w, h));
-    return { w: Math.round(w*e), h: Math.round(h*e) };
-  };
-  const alBlob = (c, w, h) => new Promise((ok, fail) =>
-    c.toBlob(b => b ? ok({ blob:b, w, h }) : fail(new Error('No se pudo procesar la imagen')),
-             'image/jpeg', calidad));
+/** Nunca deja una promesa colgada: si tarda de más, se rinde. */
+function conTiempo(promesa, ms, queHacia) {
+  return Promise.race([
+    promesa,
+    new Promise((_, fail) => setTimeout(
+      () => fail(new Error('Se agotó el tiempo ' + queHacia)), ms))
+  ]);
+}
 
-  // createImageBitmap descodifica fuera del hilo de la interfaz y sabe
-  // reescalar solo. Con una foto de 12 megapíxeles ahorra segundos, que es
-  // lo que hacía que el porcentaje pareciera clavado en cero.
-  if (typeof createImageBitmap === 'function') {
-    try {
-      const sonda = await createImageBitmap(file);
-      const { w, h } = medidas(sonda.width, sonda.height);
-      sonda.close && sonda.close();
-      let bmp;
+function aBlob(canvas, calidad) {
+  return new Promise((ok, fail) => {
+    if (!canvas.toBlob) {
+      // Safari antiguo: se arma el blob a mano desde el data URL
       try {
-        bmp = await createImageBitmap(file, { resizeWidth:w, resizeHeight:h, resizeQuality:'medium' });
-      } catch (e) { bmp = await createImageBitmap(file); }
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(bmp, 0, 0, w, h);
-      bmp.close && bmp.close();
-      return await alBlob(c, w, h);
-    } catch (e) { /* se sigue por el camino de siempre */ }
-  }
-
-  return await new Promise((ok, fail) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = async () => {
-      URL.revokeObjectURL(url);
-      const { w, h } = medidas(img.width, img.height);
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      try { ok(await alBlob(c, w, h)); } catch (e) { fail(e); }
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); fail(new Error('Ese archivo no es una imagen')); };
-    img.src = url;
+        const s = canvas.toDataURL('image/jpeg', calidad).split(',')[1];
+        const bin = atob(s);
+        const buf = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+        return ok(new Blob([buf], { type:'image/jpeg' }));
+      } catch (e) { return fail(e); }
+    }
+    canvas.toBlob(b => b ? ok(b) : fail(new Error('El navegador no pudo comprimir la imagen')),
+                  'image/jpeg', calidad);
   });
 }
 
+/**
+ * Reduce la foto antes de subirla.
+ *
+ * En iPhone esto es lo delicado. Una foto de la cámara son 12 megapíxeles;
+ * descodificarla ya cuesta, Safari limita el tamaño de los lienzos y a
+ * veces deja `toBlob` sin responder. Por eso se descodifica UNA sola vez
+ * —medir y reescalar por separado duplicaba el trabajo—, todo lleva tiempo
+ * máximo para que ninguna promesa quede colgada, y si algo falla quien
+ * llama sube la foto original en vez de rendirse.
+ */
+async function encogerImagen(file, maxLado = 1200, calidad = 0.68) {
+  const dibujar = (fuente, anchoO, altoO) => {
+    const e = Math.min(1, maxLado / Math.max(anchoO, altoO));
+    const w = Math.max(1, Math.round(anchoO * e));
+    const h = Math.max(1, Math.round(altoO * e));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingQuality = 'medium';
+    ctx.drawImage(fuente, 0, 0, w, h);
+    return { c, w, h };
+  };
+
+  if (typeof createImageBitmap === 'function') {
+    let bmp = null;
+    try {
+      bmp = await conTiempo(createImageBitmap(file), 15000, 'al abrir la foto');
+      const { c, w, h } = dibujar(bmp, bmp.width, bmp.height);
+      const blob = await conTiempo(aBlob(c, calidad), 15000, 'al comprimir la foto');
+      return { blob, w, h };
+    } catch (e) {
+      console.warn('createImageBitmap no sirvió, se prueba con <img>:', e);
+    } finally {
+      if (bmp && bmp.close) bmp.close();
+    }
+  }
+
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await conTiempo(new Promise((ok, fail) => {
+      const i = new Image();
+      i.onload  = () => ok(i);
+      i.onerror = () => fail(new Error('El navegador no pudo abrir esa imagen'));
+      i.src = url;
+    }), 15000, 'al abrir la foto');
+
+    const { c, w, h } = dibujar(img, img.naturalWidth || img.width, img.naturalHeight || img.height);
+    const blob = await conTiempo(aBlob(c, calidad), 15000, 'al comprimir la foto');
+    return { blob, w, h };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 async function enviarFoto(chatId, file, onProgreso) {
-  if (!file.type.startsWith('image/')) throw new Error('Sólo se pueden enviar imágenes');
+  if (file.type && !file.type.startsWith('image/')) {
+    throw new Error('Sólo se pueden enviar imágenes');
+  }
   if (file.size > 12 * 1024 * 1024)    throw new Error('La imagen es demasiado grande');
 
   // Encoger ocurre ANTES de que empiece la subida: sin avisar de esta fase
   // el porcentaje se queda en cero y parece colgado.
   if (onProgreso) onProgreso(null);
-  const { blob, w, h } = await encogerImagen(file);
+
+  // Si reducirla falla —Safari con una foto enorme, un formato que no sabe
+  // dibujar— se sube tal cual. Tarda más, pero la foto llega. Quedarse sin
+  // enviar nada sería el peor resultado.
+  let blob, w = 0, h = 0;
+  try {
+    ({ blob, w, h } = await encogerImagen(file));
+  } catch (e) {
+    console.warn('No se pudo reducir la foto, se sube original:', e);
+    blob = file;
+  }
 
   const nombre = `${Date.now()}_${Math.random().toString(36).slice(2,9)}.jpg`;
   const ref = firebase.storage().ref(`chat/${chatId}/${nombre}`);
 
   // Con el porcentaje a la vista la espera se hace corta; sin él, cualquier
   // segundo parece que se colgó.
-  const tarea = ref.put(blob, { contentType:'image/jpeg' });
+  // El original de un iPhone puede ser HEIC; declararlo mal haría que no se
+  // viera.
+  const tarea = ref.put(blob, { contentType: blob.type || 'image/jpeg' });
   await new Promise((ok, fail) => {
     tarea.on('state_changed',
       s => { if (onProgreso && s.totalBytes) onProgreso(Math.round(s.bytesTransferred / s.totalBytes * 100)); },
