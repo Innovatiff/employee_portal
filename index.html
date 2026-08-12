@@ -893,11 +893,13 @@ async function doFoto(input) {
   const btn = document.getElementById('fotoBtn');
   btn.disabled = true;
   btn.classList.add('subiendo');
-  btn.innerHTML = '<span class="pct">0%</span>';
+  btn.innerHTML = '<ion-icon name="sync-outline" class="gira"></ion-icon>';
   try {
     await enviarFoto(activeChat.id, file, pct => {
+      if (pct === null) return;          // todavía encogiendo
       const p = btn.querySelector('.pct');
       if (p) p.textContent = pct + '%';
+      else   btn.innerHTML = `<span class="pct">${pct}%</span>`;
     });
   } catch (err) {
     console.error('enviar foto', err);
