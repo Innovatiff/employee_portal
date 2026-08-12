@@ -255,10 +255,14 @@ async function vInicio() {
     if (open) {
       const desde = open.clockIn.toDate();
       const trans = ((Date.now()-desde.getTime())/3600000);
+      // Un turno de otro día es un olvido, no una jornada de treinta horas
+      const olvido = open.date && open.date !== todayStr();
       turno = `<div class="shift activo">
-        <div class="shift-top"><span class="pip"></span>TURNO ABIERTO</div>
+        <div class="shift-top"><span class="pip"></span>${olvido ? 'TURNO SIN CERRAR' : 'TURNO ABIERTO'}</div>
         <div class="shift-big">${trans.toFixed(2)} h</div>
-        <div class="shift-sub">Entraste a las ${fTime(desde)}</div>
+        <div class="shift-sub">${olvido
+          ? `Del ${fDate(open.date)}. Ciérralo en el reloj de la tienda y avisa a tu gerente.`
+          : `Entraste a las ${fTime(desde)}`}</div>
       </div>`;
     } else {
       turno = `<div class="shift inactivo">

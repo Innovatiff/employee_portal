@@ -179,12 +179,20 @@ async function myClockIns(from, to) {
     .sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 }
 
+/**
+ * El turno abierto, sea de hoy o de otro día. Sin filtrar por fecha a
+ * propósito: quien olvida marcar la salida deja el turno abierto, y si sólo
+ * se miraran las marcas de hoy no lo vería nunca —ni sabría por qué le
+ * faltan horas en la nómina—.
+ */
 async function myOpenShift() {
   const snap = await db.collection('ClockIns')
     .where('employeeId','==',ME.employeeId)
-    .where('date','==',todayStr())
-    .where('clockOut','==',null).limit(1).get();
-  return snap.empty ? null : { id:snap.docs[0].id, ...snap.docs[0].data() };
+    .where('clockOut','==',null).get();
+  if (snap.empty) return null;
+  const abiertos = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+    .sort((a,b) => String(b.date||'').localeCompare(String(a.date||'')));
+  return abiertos[0];
 }
 
 async function myPayStatements() {
