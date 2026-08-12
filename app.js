@@ -358,8 +358,43 @@ async function activarPush() {
  * reinstalar). Si no, se ofrece un botón: pedirlo de golpe al entrar es
  * justo lo que la gente rechaza, y el navegador no vuelve a preguntar.
  */
+// En iPhone, Safari sólo permite pedir el permiso si la app está añadida a
+// la pantalla de inicio. Mientras se abra como página normal, `Notification`
+// ni siquiera existe, así que no hay nada que ofrecer: hay que explicar el
+// paso que falta en vez de no mostrar nada.
+const esIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const estaInstalada = () => window.navigator.standalone === true
+  || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+
+function avisarInstalar() {
+  if (localStorage.getItem('elaguila_instalar_no')) return;
+  const bar = document.createElement('div');
+  bar.className = 'push-ask';
+  bar.innerHTML = `
+    <i class="fa-solid fa-arrow-up-from-bracket"></i>
+    <div style="flex:1">
+      <div class="push-ask-t">Instala la app para recibir avisos</div>
+      <div class="push-ask-s">
+        Toca <strong>Compartir</strong> abajo y elige <strong>Añadir a inicio</strong>.
+        Luego abre El Águila desde el icono nuevo.
+      </div>
+    </div>
+    <button class="push-no" aria-label="Ahora no"><i class="fa-solid fa-xmark"></i></button>`;
+  bar.querySelector('.push-no').onclick = () => {
+    localStorage.setItem('elaguila_instalar_no', '1');
+    bar.remove();
+  };
+  document.querySelector('.appbar').insertAdjacentElement('afterend', bar);
+}
+
 function setupPush() {
-  if (!VAPID_KEY || !('Notification' in window)) return;
+  if (!VAPID_KEY) return;
+  if (!('Notification' in window)) {
+    // En iPhone sin instalar, ésta es justo la situación: se explica.
+    if (esIOS() && !estaInstalada()) avisarInstalar();
+    return;
+  }
   if (Notification.permission === 'granted') { activarPush(); return; }
   if (Notification.permission === 'denied')  return;
   if (localStorage.getItem('elaguila_push_no')) return;
