@@ -243,6 +243,28 @@ const PED_ESTADO = {
   recibido: { label:'Recibido', badge:'b-green' }
 };
 
+// ── Horario ──
+// Un documento por semana y tienda; el colaborador sólo pinta su fila.
+
+function lunesDe(fecha) {
+  const d = fecha instanceof Date ? new Date(fecha) : parseD(fecha);
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return toDateStr(d);
+}
+function diasDeSemana(lunes) {
+  const base = parseD(lunes);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(base); d.setDate(d.getDate() + i);
+    return toDateStr(d);
+  });
+}
+async function miHorario(lunes) {
+  const doc = await db.collection('Horarios').doc(`${lunes}_${ME.store}`).get();
+  if (!doc.exists) return {};
+  return (doc.data().shifts || {})[ME.employeeId] || {};
+}
+
 // ── Chat ──
 const ANUNCIOS = 'anuncios';
 

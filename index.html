@@ -244,7 +244,9 @@ async function vInicio() {
   loading(3);
   try {
     const p = curPeriod();
-    const [open, cis] = await Promise.all([myOpenShift(), myClockIns(p.start, p.end)]);
+    const lunes = lunesDe(new Date());
+    const [open, cis, agenda] = await Promise.all([
+      myOpenShift(), myClockIns(p.start, p.end), miHorario(lunes).catch(() => ({}))]);
 
     const done   = cis.filter(c => c.clockOut);
     const horas  = done.reduce((s,c)=>s+(c.hours||0),0);
@@ -273,6 +275,24 @@ async function vInicio() {
       </div>`;
     }
 
+    // Semana en curso: siete pastillas, la de hoy destacada
+    const fechasSem = diasDeSemana(lunes);
+    const hoyStr2 = todayStr();
+    const semana = `
+      <div class="section-t">Mi horario esta semana</div>
+      <div class="card agenda">
+        ${fechasSem.map((f, i) => {
+          const t = agenda[f];
+          const d = parseD(f);
+          return `<div class="agenda-dia ${f === hoyStr2 ? 'hoy' : ''}">
+            <div class="agenda-nom">${DCORTO[(i + 1) % 7]}</div>
+            <div class="agenda-num">${d.getDate()}</div>
+            ${t ? `<div class="agenda-turno">${t.in}<br>${t.out}</div>`
+                : `<div class="agenda-libre">Libre</div>`}
+          </div>`;
+        }).join('')}
+      </div>`;
+
     el().innerHTML = `
       <div style="margin-bottom:16px">
         <div style="font-size:24px;font-weight:800;letter-spacing:-.04em">Hola, ${esc((ME.name||'').split(' ')[0])}</div>
@@ -280,6 +300,8 @@ async function vInicio() {
       </div>
 
       ${turno}
+
+      ${semana}
 
       <div class="section-t">Período actual · ${perLabel(p)}</div>
       <div class="kpis">

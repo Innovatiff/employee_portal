@@ -700,3 +700,16 @@ ion-icon {
   background:var(--red); border:1.5px solid #fff;
   animation:latido 1.8s var(--ease) infinite;
 }
+
+/* ══ Mi horario de la semana ══ */
+.agenda {
+  display:grid; grid-template-columns:repeat(7, 1fr);
+  padding:10px 6px; text-align:center;
+}
+.agenda-dia { padding:6px 2px; border-radius:10px; }
+.agenda-dia.hoy { background:var(--primary-soft); }
+.agenda-nom { font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--light); }
+.agenda-num { font-size:15px; font-weight:750; margin:1px 0 4px; }
+.agenda-dia.hoy .agenda-num { color:var(--primary); }
+.agenda-turno { font-size:9.5px; font-weight:650; line-height:1.35; color:var(--text); }
+.agenda-libre { font-size:9.5px; color:var(--light); }
