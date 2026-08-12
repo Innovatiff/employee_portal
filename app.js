@@ -542,6 +542,34 @@ function sinLeer(chats) {
   }).sort((a,b) => msOf(b.lastAt) - msOf(a.lastAt));
 }
 
+// ══ Visto y reacciones ══
+//
+// "Visto" se comparte: al tener una conversación abierta se anota la hora
+// en Chats/{id}.vistos[miPid], y el que envió ve el "Visto" bajo su
+// mensaje. La marca local de arriba sigue mandando para el punto rojo.
+
+const vistoEscrito = {};   // anti-bucle: escribir dispara el snapshot que
+                           // vuelve aquí; sólo se escribe si hay algo nuevo.
+function marcarVisto(chatId, lastAtMs) {
+  if (!ME) return;
+  const t = lastAtMs || Date.now();
+  if (vistoEscrito[chatId] && vistoEscrito[chatId] >= t) return;
+  vistoEscrito[chatId] = t;
+  const campo = {}; campo['vistos.' + ME.pid] = firebase.firestore.FieldValue.serverTimestamp();
+  db.collection('Chats').doc(chatId).update(campo)
+    .catch(e => console.warn('marcarVisto', e));
+}
+
+const REACCION = { up:'👍', love:'❤️', down:'👎' };
+
+// Poner, cambiar o quitar (si ya era la misma) la reacción propia.
+async function reaccionar(msgId, tipo, actual) {
+  const campo = {};
+  campo['reacciones.' + ME.pid] =
+    actual === tipo ? firebase.firestore.FieldValue.delete() : tipo;
+  await db.collection('Messages').doc(msgId).update(campo);
+}
+
 
 // ══ Notificaciones con la app cerrada (Firebase Cloud Messaging) ══
 //
