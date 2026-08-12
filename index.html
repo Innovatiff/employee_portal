@@ -96,6 +96,18 @@
   <div id="composeWrap"></div>
 </div>
 
+<!-- Comprobante de pago a pantalla completa -->
+<div class="stub" id="stub">
+  <div class="stub-bar">
+    <button class="back" onclick="cerrarComprobante()"><ion-icon name="chevron-back-outline"></ion-icon></button>
+    <div class="stub-bar-t">Comprobante de pago</div>
+    <button class="stub-dl" onclick="window.print()" title="Guardar o imprimir">
+      <ion-icon name="download-outline"></ion-icon>
+    </button>
+  </div>
+  <div class="stub-scroll"><div class="stub-doc" id="stubDoc"></div></div>
+</div>
+
 <!-- Hoja inferior -->
 <div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
 <div class="sheet" id="sheet">
@@ -106,6 +118,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
 <script src="app.js"></script>
 <script>
@@ -413,7 +426,82 @@ function verRecibo(json) {
         ${s.paidDate ? `<div class="row-s">Pagado el ${fDate(s.paidDate)}</div>` : ''}</div>
         <span class="badge ${pagado?'b-green':'b-amber'}">${pagado?'Pagado':'Pendiente'}</span></div>
     </div>
+    <button class="btn btn-primary btn-block" onclick='closeSheet();abrirComprobante(${JSON.stringify(json)})' style="margin-bottom:9px">
+      <ion-icon name="document-text-outline"></ion-icon> Ver comprobante
+    </button>
     <button class="btn btn-ghost btn-block" onclick="closeSheet()">Cerrar</button>`);
+}
+
+// ══════════ Comprobante de pago ══════════
+//
+// Se arma aquí con los datos del recibo en vez de guardar un archivo: así
+// no hay nada que subir ni que caduque, y el documento siempre coincide con
+// lo que tiene la gerencia. El botón de descarga abre el diálogo de
+// impresión del sistema, que en teléfono ofrece "Guardar en Archivos" como
+// PDF y en computadora "Guardar como PDF".
+function abrirComprobante(json) {
+  const s = JSON.parse(json);
+  const pagado = s.status === 'paid';
+  const folio  = (s.id || '').slice(-6).toUpperCase() || '——————';
+  const bruto  = Number(s.gross || 0);
+
+  document.getElementById('stubDoc').innerHTML = `
+    <div class="stub-head">
+      <div class="stub-marca">
+        <svg viewBox="7 0 44 44" class="stub-logo" aria-hidden="true"><path fill-rule="evenodd" d="M8.6 27C7.6 15.4 15.4 5.4 26.6 5.4C33.4 5.4 37.6 9.2 39 14.3L46.3 16.9C49.5 18.1 49.9 21.3 46.7 25.5C44.9 27.9 42.7 29.6 40.5 30.4C41.9 27.6 41.7 25 40.5 23.6C38.7 21.7 36.1 21.2 33.7 22C32.1 23.8 30.7 26 29.3 28.2C27.7 30.7 26.3 33.8 25 38.6L10.6 33.2C9.2 31.2 8.7 29 8.6 27ZM28.9 13.3C31.1 12.3 33.7 13.1 34.3 15.1C33.1 16.5 30.5 16.5 28.9 15.3Z"/></svg>
+        <div>
+          <div class="stub-emp">El Águila</div>
+          <div class="stub-sub">${esc(storeName(ME.store))}</div>
+        </div>
+      </div>
+      <div class="stub-tipo">
+        <div class="stub-tipo-t">Comprobante de pago</div>
+        <div class="stub-folio">Folio ${folio}</div>
+      </div>
+    </div>
+
+    <div class="stub-meta">
+      <div><span>Colaborador</span><strong>${esc(ME.name)}</strong></div>
+      <div><span>Puesto</span><strong>${esc(ME.jobTitle || '—')}</strong></div>
+      <div><span>Período</span><strong>${fDate(s.periodStart)} – ${fDate(s.periodEnd)}</strong></div>
+      <div><span>Fecha de pago</span><strong>${s.paidDate ? fDate(s.paidDate) : 'Pendiente'}</strong></div>
+    </div>
+
+    <table class="stub-tabla">
+      <thead><tr><th>Concepto</th><th class="num">Cantidad</th><th class="num">Tarifa</th><th class="num">Importe</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Horas trabajadas</td>
+          <td class="num">${(s.hours||0).toFixed(2)} h</td>
+          <td class="num">${money(s.rate)}</td>
+          <td class="num">${money(bruto)}</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr><td colspan="3">Total bruto</td><td class="num">${money(bruto)}</td></tr>
+        <tr><td colspan="3">Deducciones</td><td class="num">${money(0)}</td></tr>
+        <tr class="stub-neto"><td colspan="3">Neto a pagar</td><td class="num">${money(bruto)}</td></tr>
+      </tfoot>
+    </table>
+
+    <div class="stub-estado ${pagado ? 'ok' : 'pend'}">
+      <ion-icon name="${pagado ? 'checkmark-circle-outline' : 'hourglass-outline'}"></ion-icon>
+      ${pagado
+        ? `Pagado el ${fDate(s.paidDate)}`
+        : 'Pendiente de pago. Tu gerente lo marcará cuando se realice.'}
+    </div>
+
+    <div class="stub-pie">
+      Documento generado por El Águila el ${fDateLong(new Date())}.
+      Las cifras corresponden a las horas registradas en el reloj de la tienda
+      durante el período indicado. Si algo no cuadra, habla con tu gerente.
+    </div>`;
+
+  document.getElementById('stub').classList.add('on');
+}
+
+function cerrarComprobante() {
+  document.getElementById('stub').classList.remove('on');
 }
 
 // ══════════ Permisos ══════════
@@ -731,6 +819,9 @@ function mountThread() {
   document.getElementById('composeWrap').innerHTML = activeChat.type==='anuncios'
     ? `<div class="locked"><ion-icon name="megaphone-outline"></ion-icon> Sólo la gerencia publica anuncios.</div>`
     : `<div class="compose">
+         <input type="file" id="fotoIn" accept="image/*" hidden onchange="doFoto(this)">
+         <button class="adj" id="fotoBtn" aria-label="Enviar foto"
+                 onclick="document.getElementById('fotoIn').click()"><ion-icon name="image-outline"></ion-icon></button>
          <textarea id="msgIn" rows="1" placeholder="Escribe un mensaje..." oninput="autoCrecer(this)"></textarea>
          <button class="send" onclick="enviarMsg()"><ion-icon name="send-outline"></ion-icon></button>
        </div>`;
@@ -776,18 +867,54 @@ function paintMsgs(list) {
       html += `<div class="anuncio">
         <div class="anuncio-h">${avatar(m.senderName,22)}<b>${esc(m.senderName)}</b>
           <time>${fTime(d)}</time></div>
-        <div class="anuncio-b">${esc(m.text).replace(/\n/g,'<br>')}</div></div>`;
+        <div class="anuncio-b">${m.type === 'image'
+          ? `<img class="anuncio-foto" src="${m.url}" alt="Foto" loading="lazy" onclick="verFoto('${m.url}')">`
+          : esc(m.text).replace(/\n/g,'<br>')}</div></div>`;
     } else {
       const mio = m.senderId === ME.pid;
       html += `<div class="bub-row ${mio?'me':''} ${seguido?'seguido':''} ${ultimo?'ultimo':''}">
         ${mio || seguido ? '' : `<div class="bub-quien">${esc(m.senderName||'')}</div>`}
-        <div class="bub">
-        <div class="txt">${esc(m.text).replace(/\n/g,'<br>')}</div>
+        <div class="bub ${m.type==='image'?'bub-foto':''}">
+        ${m.type === 'image'
+          ? `<img src="${m.url}" alt="Foto" loading="lazy"
+                  style="aspect-ratio:${(m.w||4)}/${(m.h||3)}" onclick="verFoto('${m.url}')">`
+          : `<div class="txt">${esc(m.text).replace(/\n/g,'<br>')}</div>`}
         <div class="at">${fTime(d)}</div></div></div>`;
     }
   });
   box.innerHTML = html;
   if (alFinal) box.scrollTop = box.scrollHeight;
+}
+
+async function doFoto(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file || !activeChat) return;
+  const btn = document.getElementById('fotoBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<ion-icon name="sync-outline" class="gira"></ion-icon>';
+  try {
+    await enviarFoto(activeChat.id, file);
+  } catch (err) {
+    console.error('enviar foto', err);
+    toast('No se pudo enviar la foto: ' + err.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<ion-icon name="image-outline"></ion-icon>';
+  }
+}
+
+function verFoto(url) {
+  let v = document.getElementById('visorFoto');
+  if (!v) {
+    v = document.createElement('div');
+    v.id = 'visorFoto'; v.className = 'visor-foto';
+    v.onclick = () => v.classList.remove('on');
+    v.innerHTML = '<img alt="Foto">';
+    document.body.appendChild(v);
+  }
+  v.querySelector('img').src = url;
+  v.classList.add('on');
 }
 
 // El cuadro crece con el mensaje en vez de quedarse en una línea

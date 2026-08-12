@@ -571,3 +571,122 @@ ion-icon {
 .gira { animation: girar 900ms linear infinite; }
 @keyframes girar { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .gira { animation-duration: 2.4s; } }
+
+/* ══ Comprobante de pago ══
+   Documento a pantalla completa, pensado también para imprimirse: al
+   imprimir se oculta todo lo demás y queda sólo el papel. */
+.stub {
+  position:fixed; inset:0; z-index:90; background:var(--bg);
+  display:none; flex-direction:column;
+}
+.stub.on { display:flex; animation:fade .2s ease both; }
+.stub-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:12px 10px; background:#fff; border-bottom:1px solid var(--line);
+  padding-top:calc(12px + env(safe-area-inset-top));
+}
+.stub-bar .back, .stub-dl {
+  width:38px; height:38px; flex-shrink:0;
+  border:none; background:none; color:var(--primary);
+  font-size:20px; cursor:pointer; display:grid; place-items:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.stub-bar-t { flex:1; text-align:center; font-size:15px; font-weight:650; }
+
+.stub-scroll {
+  flex:1; overflow-y:auto;
+  padding:14px 14px calc(20px + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling:touch;
+}
+.stub-doc {
+  background:#fff; border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:var(--sh-md); padding:20px 18px; max-width:640px; margin:0 auto;
+}
+
+.stub-head {
+  display:flex; align-items:flex-start; justify-content:space-between; gap:14px;
+  padding-bottom:14px; border-bottom:2px solid var(--ink);
+}
+.stub-marca { display:flex; align-items:center; gap:10px; }
+.stub-logo  { width:34px; height:34px; fill:var(--primary); flex-shrink:0; }
+.stub-emp   { font-size:17px; font-weight:800; letter-spacing:-.02em; }
+.stub-sub   { font-size:11.5px; color:var(--muted); }
+.stub-tipo    { text-align:right; }
+.stub-tipo-t  { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+.stub-folio   { font-size:12px; font-weight:650; margin-top:2px; }
+
+.stub-meta {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px 14px;
+  padding:14px 0; border-bottom:1px solid var(--line);
+}
+.stub-meta span   { display:block; font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--light); }
+.stub-meta strong { font-size:13px; font-weight:600; }
+
+.stub-tabla { width:100%; border-collapse:collapse; margin:14px 0 4px; }
+.stub-tabla th {
+  font-size:10.5px; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--muted); text-align:left; font-weight:700;
+  padding:0 0 7px; border-bottom:1px solid var(--line);
+}
+.stub-tabla td { font-size:13px; padding:9px 0; border-bottom:1px solid var(--line); }
+.stub-tabla .num { text-align:right; font-variant-numeric:tabular-nums; }
+.stub-tabla tfoot td { color:var(--muted); border-bottom:none; padding:5px 0; }
+.stub-tabla tfoot .stub-neto td {
+  font-size:15px; font-weight:750; color:var(--text);
+  border-top:2px solid var(--ink); padding-top:9px;
+}
+
+.stub-estado {
+  display:flex; align-items:center; gap:8px;
+  margin-top:14px; padding:10px 12px; border-radius:var(--r);
+  font-size:12.5px; font-weight:600;
+}
+.stub-estado.ok   { background:var(--green-soft); color:var(--green); }
+.stub-estado.pend { background:var(--amber-soft); color:var(--amber); }
+
+.stub-pie { margin-top:14px; font-size:11px; line-height:1.6; color:var(--light); }
+
+@media print {
+  /* Las animaciones arrancan en opacidad cero y el navegador no las
+     ejecuta al imprimir: sin esto el papel saldría en blanco. */
+  *, *::before, *::after { animation:none !important; transition:none !important;
+                           opacity:1 !important; transform:none !important; }
+  body > *:not(.stub) { display:none !important; }
+  .stub { position:static; display:block !important; background:#fff; }
+  .stub-bar { display:none !important; }
+  .stub-scroll { overflow:visible; padding:0; }
+  .stub-doc { border:none; box-shadow:none; max-width:none; padding:0; }
+}
+
+/* ══ Fotos en el chat ══ */
+.compose .adj {
+  width:44px; height:44px; flex-shrink:0;
+  border:1px solid var(--line); border-radius:14px;
+  background:#fff; color:var(--muted);
+  font-size:19px; cursor:pointer;
+  display:grid; place-items:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.compose .adj:active   { background:var(--primary-soft); color:var(--primary); }
+.compose .adj:disabled { opacity:.6; }
+
+/* Una foto no necesita el relleno de una burbuja de texto */
+.bub-foto { padding:4px 4px 3px; }
+.bub-foto img {
+  display:block; width:100%; max-width:240px; height:auto;
+  border-radius:13px; background:var(--bg);
+}
+.bub-foto .at { padding-right:4px; }
+.anuncio-foto {
+  display:block; max-width:100%; height:auto;
+  border-radius:var(--r); margin-top:5px; background:var(--bg);
+}
+
+.visor-foto {
+  position:fixed; inset:0; z-index:200;
+  background:rgba(9,12,22,.94);
+  display:none; align-items:center; justify-content:center;
+  padding:16px;
+}
+.visor-foto.on { display:flex; animation:fade .16s ease both; }
+.visor-foto img { max-width:100%; max-height:100%; border-radius:var(--r); }

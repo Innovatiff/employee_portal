@@ -237,6 +237,52 @@ const PED_ESTADO = {
 
 // ── Chat ──
 const ANUNCIOS = 'anuncios';
+
+/**
+ * Reduce la foto antes de subirla. Una foto de teléfono ronda los 4 MB;
+ * subirla tal cual tarda, gasta datos del colaborador y no se ve mejor en
+ * una burbuja. A 1600 px y JPEG queda en torno a 200 KB.
+ */
+function encogerImagen(file, maxLado = 1600, calidad = 0.82) {
+  return new Promise((ok, fail) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let w = img.width, h = img.height;
+      const escala = Math.min(1, maxLado / Math.max(w, h));
+      w = Math.round(w * escala); h = Math.round(h * escala);
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      c.toBlob(b => b ? ok({ blob:b, w, h }) : fail(new Error('No se pudo procesar la imagen')),
+               'image/jpeg', calidad);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); fail(new Error('Ese archivo no es una imagen')); };
+    img.src = url;
+  });
+}
+
+async function enviarFoto(chatId, file) {
+  if (!file.type.startsWith('image/')) throw new Error('Sólo se pueden enviar imágenes');
+  if (file.size > 12 * 1024 * 1024)    throw new Error('La imagen es demasiado grande');
+
+  const { blob, w, h } = await encogerImagen(file);
+  const nombre = `${Date.now()}_${Math.random().toString(36).slice(2,9)}.jpg`;
+  const ref = firebase.storage().ref(`chat/${chatId}/${nombre}`);
+  await ref.put(blob, { contentType:'image/jpeg' });
+  const url = await ref.getDownloadURL();
+
+  await db.collection('Messages').add({
+    chatId, senderId: ME.pid, senderName: ME.name, senderRole:'colaborador',
+    type:'image', url, w, h, text:'',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  await db.collection('Chats').doc(chatId).set({
+    lastMessage:'Foto', lastSender: ME.pid,
+    lastAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge:true });
+}
 const dmId = (a,b) => 'dm_' + [a,b].sort().join('__');
 
 async function ensureDm(otherPid, names) {
