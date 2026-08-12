@@ -690,3 +690,5 @@ ion-icon {
 }
 .visor-foto.on { display:flex; animation:fade .16s ease both; }
 .visor-foto img { max-width:100%; max-height:100%; border-radius:var(--r); }
+.compose .adj.subiendo { color:var(--primary); border-color:var(--primary); }
+.compose .adj .pct { font-size:11.5px; font-weight:700; }
