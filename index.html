@@ -191,6 +191,7 @@ auth.onAuthStateChanged(async user => {
     document.getElementById('barAva').innerHTML = avatar(ME.name, 36);
     buildTabs();
     watchChats();
+    revisarRecibos();
     setupPush();
     go('inicio');
   } catch (err) {
@@ -374,6 +375,53 @@ async function vHoras() {
   } catch (err) { errView(err); }
 }
 
+// ══════════ Avisos de recibos ══════════
+//
+// La push sólo se ve con la app cerrada. Con la app abierta el aviso llega
+// aquí, así que la pestaña de Pagos lleva un punto igual que la de Grupo.
+// Lo ya visto se guarda en este teléfono: no hacen falta reglas nuevas y
+// "visto" es de verdad algo de cada dispositivo.
+
+const RECIBOS_VISTOS = 'elaguila_recibos_vistos';
+
+function recibosVistos() {
+  try { return new Set(JSON.parse(localStorage.getItem(RECIBOS_VISTOS) || '[]')); }
+  catch (e) { return new Set(); }
+}
+function marcarRecibosVistos(ids) {
+  const v = recibosVistos();
+  ids.forEach(id => v.add(id));
+  try { localStorage.setItem(RECIBOS_VISTOS, JSON.stringify([...v])); } catch (e) {}
+  pintarPuntoPagos(0);
+}
+function pintarPuntoPagos(n) {
+  const tab = document.querySelector('.tab[data-t="pagos"]');
+  if (tab) tab.classList.toggle('nuevo', n > 0);
+}
+
+async function revisarRecibos() {
+  try {
+    const list = await myPayStatements();
+    const vistos = recibosVistos();
+    // Un recibo en cero no tiene nada que mirar
+    const nuevos = list.filter(s => !vistos.has(s.id) && Number(s.gross || 0) > 0);
+    pintarPuntoPagos(nuevos.length);
+
+    // La primera vez no se avisa de todo el historial de golpe: se dan por
+    // vistos los que ya existían y sólo se avisa de lo que llegue después.
+    if (!localStorage.getItem(RECIBOS_VISTOS)) {
+      marcarRecibosVistos(list.map(s => s.id));
+      return;
+    }
+    if (nuevos.length) {
+      const uno = nuevos[0];
+      toast(uno.status === 'paid'
+        ? `Pago realizado: ${money(uno.gross)}`
+        : `Tu recibo de ${perLabel({ start: uno.periodStart, end: uno.periodEnd })} ya está listo`, 'ok');
+    }
+  } catch (err) { console.error('revisarRecibos', err); }
+}
+
 // ══════════ Pagos ══════════
 async function vPagos() {
   loading(3);
@@ -408,6 +456,7 @@ async function vPagos() {
               </div>
             </div>`;
           }).join('')}</div>`}`;
+    marcarRecibosVistos(list.map(s => s.id));
   } catch (err) { errView(err); }
 }
 
