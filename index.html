@@ -1116,13 +1116,10 @@ function watchChats() {
     if (activeChat) {
       marcarLeido(activeChat.id);
       marcarVisto(activeChat.id, msOf((chatMeta[activeChat.id]||{}).lastAt));
-      // Repintar la conversación SÓLO si los "vistos" cambiaron de verdad;
-      // repintar todo en cada toque al documento se sentía como un tirón.
-      const firma = JSON.stringify((chatMeta[activeChat.id]||{}).vistos || {});
-      if (firma !== vistoFirma) {
-        vistoFirma = firma;
-        if (msgsCache.length) paintMsgs(msgsCache);
-      }
+      // El "Visto" se actualiza en su sitio, sin repintar la conversación;
+      // la marca propia se ignora (sólo importan los vistos de los demás).
+      const firma = vistoFirmaDe(chatMeta[activeChat.id]);
+      if (firma !== vistoFirma) { vistoFirma = firma; refrescarEstado(); }
     }
     pintarAvisos();
     // La lista sólo se rearma si cambió algo visible de ella
@@ -1331,6 +1328,7 @@ function paintMsgs(list) {
     }
   });
   box.innerHTML = html;
+  estadoFirma = '';
   if (alFinal) box.scrollTop = box.scrollHeight;
 }
 
@@ -1521,6 +1519,26 @@ async function guardarPass() {
     toast(err.code === 'auth/wrong-password'
       ? 'La contraseña actual no es correcta.' : err.message, 'err');
   }
+}
+// Firma de los vistos AJENOS (la marca propia cambia sola y no se muestra)
+function vistoFirmaDe(meta) {
+  const v = (meta && meta.vistos) || {};
+  return Object.keys(v).filter(p => p !== ME.pid).sort()
+    .map(p => p + ':' + msOf(v[p])).join('|');
+}
+
+// Cambia únicamente la línea de estado bajo mi último mensaje.
+let estadoFirma = '';
+function refrescarEstado() {
+  if (!activeChat || !msgsCache.length) return;
+  const m = msgsCache[msgsCache.length - 1];
+  if (m.senderId !== ME.pid) return;
+  const html = estadoDe(m);
+  if (html === estadoFirma) return;
+  const nodo = document.querySelector('#msgs .msg-estado');
+  if (!nodo) { paintMsgs(msgsCache); estadoFirma = html; return; }
+  estadoFirma = html;
+  nodo.outerHTML = html;
 }
 </script>
 </body>
