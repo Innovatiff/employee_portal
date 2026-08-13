@@ -243,7 +243,7 @@ const PED_ESTADO = {
   recibido: { label:'Recibido', badge:'b-green' }
 };
 
-// ── Registros de viaje (kilometraje a las farmacias) ──
+// ── Registros de viaje (kilometraje de las salidas) ──
 
 async function miViajeAbierto() {
   const snap = await db.collection('Registros')
