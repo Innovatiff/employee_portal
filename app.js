@@ -503,15 +503,30 @@ function listenMessages(chatId, cb) {
 // Las reglas sólo dejan leer las conversaciones propias, así que la
 // escucha va acotada; anuncios se sigue por separado porque es pública.
 function listenChats(cb) {
-  const st = { mine:[], anuncios:null };
-  const emit = () => cb(st.anuncios ? st.mine.concat([st.anuncios]) : st.mine);
+  const st = { mine:[], anuncios:null, tienda:null };
+  const emit = () => cb(st.mine
+    .concat(st.anuncios ? [st.anuncios] : [])
+    .concat(st.tienda ? [st.tienda] : []));
   const a = db.collection('Chats').where('participants','array-contains',ME.pid)
     .onSnapshot(s => { st.mine = s.docs.map(d=>({id:d.id,...d.data()})); emit(); },
                 e => console.error('chats mine', e));
   const b = db.collection('Chats').doc(ANUNCIOS)
     .onSnapshot(d => { st.anuncios = d.exists ? {id:d.id,...d.data()} : null; emit(); },
                 e => console.error('chats anuncios', e));
-  return () => { a(); b(); };
+  // El canal de MI tienda: no lleva participantes, se escucha aparte.
+  const c = db.collection('Chats').doc('tienda_' + ME.store)
+    .onSnapshot(d => { st.tienda = d.exists ? {id:d.id,...d.data()} : null; emit(); },
+                e => console.error('chats tienda', e));
+  return () => { a(); b(); c(); };
+}
+
+// Canal fijo de la tienda; las reglas sólo dejan entrar a su gente.
+async function ensureTienda() {
+  const id = 'tienda_' + ME.store;
+  await db.collection('Chats').doc(id).set({
+    type:'tienda', store: ME.store, title: 'Chat de ' + storeShort(ME.store)
+  }, { merge:true });
+  return id;
 }
 
 

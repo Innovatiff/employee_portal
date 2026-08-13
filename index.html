@@ -1164,8 +1164,10 @@ async function vGrupo() {
       people = [];
       mgrs.docs.forEach(d => { const m=d.data();
         people.push({ pid:'mgr:'+d.id, name:m.name||m.email||'Gerencia', sub:'Gerencia', kind:'m' }); });
+      // Sólo los compañeros de MI tienda: las tiendas no se mezclan
       emps.docs.forEach(d => { const e=d.data();
-        if (e.status==='active') people.push({ pid:'emp:'+d.id, name:e.name, sub:storeShort(e.store), kind:'c' }); });
+        if (e.status==='active' && e.store===ME.store)
+          people.push({ pid:'emp:'+d.id, name:e.name, sub:storeShort(e.store), kind:'c' }); });
       people = people.filter(p => p.pid !== ME.pid);
     }
     paintConvs();
@@ -1207,6 +1209,13 @@ function paintConvs() {
           <span class="conv-t">${a.lastAt?relTime(a.lastAt):''}</span></div>
         <div class="conv-s">${esc(a.lastMessage || 'Novedades para todo el equipo')}</div>
       </div></div>
+    <div class="conv" onclick="openTienda()">
+      <div class="conv-ava tienda"><ion-icon name="storefront-outline"></ion-icon></div>
+      <div class="conv-main">
+        <div class="conv-top"><span class="conv-n">Chat de ${storeShort(ME.store)}${punto('tienda_'+ME.store)}</span>
+          <span class="conv-t">${chatMeta['tienda_'+ME.store]?.lastAt?relTime(chatMeta['tienda_'+ME.store].lastAt):''}</span></div>
+        <div class="conv-s">${esc(chatMeta['tienda_'+ME.store]?.lastMessage || 'Toda tu tienda, sin mezclar')}</div>
+      </div></div>
     ${grupos.length?`<div class="conv-label">Mis grupos</div>${grupos.map(filaGrupo).join('')}`:''}
     ${mgrs.length?`<div class="conv-label">Gerencia</div>${mgrs.map(row).join('')}`:''}
     ${cols.length?`<div class="conv-label">Compañeros</div>${cols.map(row).join('')}`:''}`;
@@ -1229,6 +1238,13 @@ async function openDm(pid) {
   mountThread();
 }
 
+async function openTienda() {
+  await ensureTienda();
+  activeChat = { id:'tienda_'+ME.store, type:'tienda',
+                 title:'Chat de ' + storeShort(ME.store), sub:'Toda la tienda' };
+  mountThread();
+}
+
 function openGrupo(id) {
   const c = chatMeta[id];
   if (!c) return;
@@ -1247,6 +1263,8 @@ function mountThread() {
     ? '<div class="conv-ava anuncios" style="width:38px;height:38px;font-size:14px"><ion-icon name="megaphone-outline"></ion-icon></div>'
     : activeChat.type==='grupo'
     ? '<div class="conv-ava grupo" style="width:38px;height:38px;font-size:14px"><ion-icon name="people-outline"></ion-icon></div>'
+    : activeChat.type==='tienda'
+    ? '<div class="conv-ava tienda" style="width:38px;height:38px;font-size:14px"><ion-icon name="storefront-outline"></ion-icon></div>'
     : avatar(activeChat.title, 38);
 
   document.getElementById('composeWrap').innerHTML = activeChat.type==='anuncios'
@@ -1390,7 +1408,7 @@ function estadoDe(m) {
   const vistos = meta.vistos || {};
   const tMs = m.createdAt?.toMillis?.() || 0;
   if (!tMs) return `<div class="msg-estado"><ion-icon name="time-outline"></ion-icon> Enviando…</div>`;
-  if (activeChat.type === 'grupo') {
+  if (activeChat.type === 'grupo' || activeChat.type === 'tienda') {
     const quienes = Object.keys(vistos)
       .filter(p => p !== ME.pid && msOf(vistos[p]) >= tMs);
     return quienes.length
