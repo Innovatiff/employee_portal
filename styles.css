@@ -830,3 +830,7 @@ ion-icon {
   display:grid; place-items:center; font-size:17px;
   background:linear-gradient(135deg,#059669,#0891b2); color:#fff;
 }
+
+/* Al repintar un chat abierto no se re-anima cada burbuja (se sentía como lag) */
+.msgs.sin-anim .bub-row,
+.msgs.sin-anim .anuncio { animation: none; }

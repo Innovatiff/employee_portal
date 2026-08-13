@@ -1099,6 +1099,7 @@ async function guardarPedido() {
 // ══════════ Grupo ══════════
 let unsubChats = null, unsubMsgs = null, people = [], chatMeta = {}, activeChat = null;
 let msgsCache = [];   // para repintar cuando cambian los "vistos"
+let vistoFirma = '', listaFirma = '';   // para no repintar sin necesidad
 
 // Sólo se corta la escucha de la conversación abierta. La de la lista de
 // chats se queda viva todo el tiempo: es la que alimenta los avisos desde
@@ -1113,13 +1114,21 @@ function watchChats() {
     chatMeta = {};
     list.forEach(c => chatMeta[c.id] = c);
     if (activeChat) {
-      marcarLeido(activeChat.id);   // lo abierto se da por visto
+      marcarLeido(activeChat.id);
       marcarVisto(activeChat.id, msOf((chatMeta[activeChat.id]||{}).lastAt));
-      // El "Visto" del otro lado viene en el documento del chat: repintar
-      if (msgsCache.length) paintMsgs(msgsCache);
+      // Repintar la conversación SÓLO si los "vistos" cambiaron de verdad;
+      // repintar todo en cada toque al documento se sentía como un tirón.
+      const firma = JSON.stringify((chatMeta[activeChat.id]||{}).vistos || {});
+      if (firma !== vistoFirma) {
+        vistoFirma = firma;
+        if (msgsCache.length) paintMsgs(msgsCache);
+      }
     }
     pintarAvisos();
-    if (TAB === 'grupo') paintConvs();
+    // La lista sólo se rearma si cambió algo visible de ella
+    const fl = list.map(c => [c.id, msOf(c.lastAt), c.lastMessage, c.lastSender, c.title].join('|')).join('§');
+    if (TAB === 'grupo' && fl !== listaFirma) paintConvs();
+    listaFirma = fl;
   });
 }
 
@@ -1259,6 +1268,7 @@ function mountThread() {
 
   if (unsubMsgs) unsubMsgs();
   msgsCache = [];
+  vistoFirma = '';
   unsubMsgs = listenMessages(activeChat.id, m => { msgsCache = m; paintMsgs(m); });
 }
 
@@ -1268,8 +1278,12 @@ function closeThread() {
   activeChat = null;
 }
 
+let chatPintado = null;   // la animación de entrada sólo la primera vez
+
 function paintMsgs(list) {
   const box = document.getElementById('msgs');
+  box.classList.toggle('sin-anim', chatPintado === activeChat.id);
+  chatPintado = activeChat.id;
   if (!list.length) {
     box.innerHTML = `<div class="empty"><ion-icon name="chatbubble-ellipses-outline"></ion-icon>
       <p>${activeChat.type==='anuncios'?'Todavía no hay anuncios.':'Escribe el primer mensaje.'}</p></div>`;
