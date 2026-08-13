@@ -335,7 +335,8 @@ async function miHorario(lunes) {
 }
 
 // ── Chat ──
-const ANUNCIOS = 'anuncios';
+// Los anuncios son por tienda: cada quien ve los de la suya.
+const anunciosId = () => 'anuncios_' + ME.store;
 
 /** Nunca deja una promesa colgada: si tarda de más, se rinde. */
 function conTiempo(promesa, ms, queHacia) {
@@ -510,7 +511,7 @@ function listenChats(cb) {
   const a = db.collection('Chats').where('participants','array-contains',ME.pid)
     .onSnapshot(s => { st.mine = s.docs.map(d=>({id:d.id,...d.data()})); emit(); },
                 e => console.error('chats mine', e));
-  const b = db.collection('Chats').doc(ANUNCIOS)
+  const b = db.collection('Chats').doc(anunciosId())
     .onSnapshot(d => { st.anuncios = d.exists ? {id:d.id,...d.data()} : null; emit(); },
                 e => console.error('chats anuncios', e));
   // El canal de MI tienda: no lleva participantes, se escucha aparte.

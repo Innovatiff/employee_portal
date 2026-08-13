@@ -1145,9 +1145,9 @@ function pintarAvisos() {
 
   if (nuevos.length > avisosAntes && TAB !== 'grupo') {
     const c = nuevos[0];
-    const quien = c.id === ANUNCIOS
-      ? 'Anuncios Generales'
-      : ((c.names && c.names[c.lastSender]) || 'un compañero');
+    const quien = String(c.id).startsWith('anuncios')
+      ? (c.title || 'Anuncios')
+      : (c.title || (c.names && c.names[c.lastSender]) || 'un compañero');
     toast('Nuevo mensaje de ' + quien, 'info');
   }
   avisosAntes = nuevos.length;
@@ -1176,7 +1176,7 @@ async function vGrupo() {
 }
 
 function paintConvs() {
-  const a = chatMeta[ANUNCIOS] || {};
+  const a = chatMeta[anunciosId()] || {};
   const pend = {}; sinLeer(Object.values(chatMeta)).forEach(c => pend[c.id] = true);
   const punto = id => pend[id] ? '<span class="conv-dot"></span>' : '';
   const mgrs = people.filter(p=>p.kind==='m'), cols = people.filter(p=>p.kind==='c');
@@ -1205,7 +1205,7 @@ function paintConvs() {
     <div class="conv" onclick="openAnuncios()">
       <div class="conv-ava anuncios"><ion-icon name="megaphone-outline"></ion-icon></div>
       <div class="conv-main">
-        <div class="conv-top"><span class="conv-n">Anuncios Generales${punto(ANUNCIOS)}</span>
+        <div class="conv-top"><span class="conv-n">Anuncios de ${storeShort(ME.store)}${punto(anunciosId())}</span>
           <span class="conv-t">${a.lastAt?relTime(a.lastAt):''}</span></div>
         <div class="conv-s">${esc(a.lastMessage || 'Novedades para todo el equipo')}</div>
       </div></div>
@@ -1222,10 +1222,12 @@ function paintConvs() {
 }
 
 async function openAnuncios() {
-  await db.collection('Chats').doc(ANUNCIOS)
-    .set({ type:'anuncios', participants:[], names:{} }, { merge:true });
-  activeChat = { id:ANUNCIOS, type:'anuncios', title:'Anuncios Generales',
-                 sub:'Todo el equipo · sólo lectura' };
+  await db.collection('Chats').doc(anunciosId()).set({
+    type:'anuncios', store: ME.store, title: 'Anuncios de ' + storeShort(ME.store)
+  }, { merge:true });
+  activeChat = { id:anunciosId(), type:'anuncios',
+                 title:'Anuncios de ' + storeShort(ME.store),
+                 sub:'Tu tienda · sólo lectura' };
   mountThread();
 }
 
