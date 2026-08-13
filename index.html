@@ -1222,22 +1222,31 @@ function paintConvs() {
 }
 
 async function openAnuncios() {
-  await db.collection('Chats').doc(anunciosId()).set({
-    type:'anuncios', store: ME.store, title: 'Anuncios de ' + storeShort(ME.store)
-  }, { merge:true });
-  activeChat = { id:anunciosId(), type:'anuncios',
-                 title:'Anuncios de ' + storeShort(ME.store),
-                 sub:'Tu tienda · sólo lectura' };
-  mountThread();
+  try {
+    const ref = db.collection('Chats').doc(anunciosId());
+    const doc = await ref.get();
+    if (!doc.exists) await ref.set({
+      type:'anuncios', store: ME.store, title: 'Anuncios de ' + storeShort(ME.store) });
+    activeChat = { id:anunciosId(), type:'anuncios',
+                   title:'Anuncios de ' + storeShort(ME.store),
+                   sub:'Tu tienda · sólo lectura' };
+    mountThread();
+  } catch (err) { toast('No se pudo abrir: ' + err.message, 'err'); }
 }
 
 async function openDm(pid) {
   const p = people.find(x=>x.pid===pid);
   if (!p) return;
-  const names = {}; names[ME.pid]=ME.name; names[p.pid]=p.name;
-  const id = await ensureDm(p.pid, names);
-  activeChat = { id, type:'dm', title:p.name, sub:p.sub+' · Conversación privada' };
-  mountThread();
+  try {
+    const names = {}; names[ME.pid]=ME.name; names[p.pid]=p.name;
+    const id = await ensureDm(p.pid, names);
+    activeChat = { id, type:'dm', title:p.name, sub:p.sub+' · Conversación privada' };
+    mountThread();
+  } catch (err) {
+    // Antes el fallo era silencioso: se tocaba y "no pasaba nada"
+    console.error('openDm', err);
+    toast('No se pudo abrir la conversación: ' + err.message, 'err');
+  }
 }
 
 async function openTienda() {

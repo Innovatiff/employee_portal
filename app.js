@@ -468,14 +468,15 @@ const dmId = (a,b) => 'dm_' + [a,b].sort().join('__');
 
 async function ensureDm(otherPid, names) {
   const id = dmId(ME.pid, otherPid);
-  // No se consulta antes si existe: las reglas deciden quién puede leer un
-  // chat mirando sus participantes, y en un documento que aún no existe no
-  // hay participantes que mirar, así que la lectura se deniega y la
-  // conversación nunca nacía. Con merge sirve igual para crear que para
-  // actualizar, y no se pisa el último mensaje.
-  await db.collection('Chats').doc(id).set({
-    type:'dm', participants:[ME.pid, otherPid], names:names||{}
-  }, { merge:true });
+  const ref = db.collection('Chats').doc(id);
+  // Primero se mira si ya existe (las reglas permiten leer un documento
+  // inexistente con el caso `resource == null`). Antes se escribía siempre,
+  // y si la gerencia había creado el chat con los participantes en otro
+  // orden, la regla veía un "cambio de miembros", lo negaba, y el chat con
+  // el gerente no abría. Leer también es más rápido que escribir.
+  const doc = await ref.get();
+  if (doc.exists) return id;
+  await ref.set({ type:'dm', participants:[ME.pid, otherPid].sort(), names:names||{} });
   return id;
 }
 
@@ -524,9 +525,10 @@ function listenChats(cb) {
 // Canal fijo de la tienda; las reglas sólo dejan entrar a su gente.
 async function ensureTienda() {
   const id = 'tienda_' + ME.store;
-  await db.collection('Chats').doc(id).set({
-    type:'tienda', store: ME.store, title: 'Chat de ' + storeShort(ME.store)
-  }, { merge:true });
+  const ref = db.collection('Chats').doc(id);
+  const doc = await ref.get();          // leer es más barato que escribir
+  if (doc.exists) return id;
+  await ref.set({ type:'tienda', store: ME.store, title: 'Chat de ' + storeShort(ME.store) });
   return id;
 }
 
