@@ -823,3 +823,10 @@ ion-icon {
 .chk-texto { font-size:14px; flex:1; min-width:0; }
 .chk-item.ok .chk-texto { color:var(--muted); text-decoration:line-through; }
 .chk-quien { font-size:11px; color:var(--light); white-space:nowrap; }
+
+/* Grupos en el chat */
+.conv-ava.grupo {
+  width:44px; height:44px; border-radius:50%; flex-shrink:0;
+  display:grid; place-items:center; font-size:17px;
+  background:linear-gradient(135deg,#059669,#0891b2); color:#fff;
+}

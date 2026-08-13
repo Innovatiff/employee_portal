@@ -1182,6 +1182,17 @@ function paintConvs() {
         <div class="conv-s">${esc(m.lastMessage || p.sub)}</div>
       </div></div>`;
   };
+  const grupos = Object.values(chatMeta).filter(c => c.type === 'grupo')
+    .sort((x,y) => String(x.title||'').localeCompare(String(y.title||'')));
+  const filaGrupo = c => `
+    <div class="conv" onclick="openGrupo('${c.id}')">
+      <div class="conv-ava grupo"><ion-icon name="people-outline"></ion-icon></div>
+      <div class="conv-main">
+        <div class="conv-top"><span class="conv-n">${esc(c.title || 'Grupo')}${punto(c.id)}</span>
+          <span class="conv-t">${c.lastAt?relTime(c.lastAt):''}</span></div>
+        <div class="conv-s">${esc(c.lastMessage || ((c.participants||[]).length + ' miembros'))}</div>
+      </div></div>`;
+
   el().innerHTML = `
     <div class="conv" onclick="openAnuncios()">
       <div class="conv-ava anuncios"><ion-icon name="megaphone-outline"></ion-icon></div>
@@ -1190,6 +1201,7 @@ function paintConvs() {
           <span class="conv-t">${a.lastAt?relTime(a.lastAt):''}</span></div>
         <div class="conv-s">${esc(a.lastMessage || 'Novedades para todo el equipo')}</div>
       </div></div>
+    ${grupos.length?`<div class="conv-label">Mis grupos</div>${grupos.map(filaGrupo).join('')}`:''}
     ${mgrs.length?`<div class="conv-label">Gerencia</div>${mgrs.map(row).join('')}`:''}
     ${cols.length?`<div class="conv-label">Compañeros</div>${cols.map(row).join('')}`:''}`;
 }
@@ -1211,6 +1223,14 @@ async function openDm(pid) {
   mountThread();
 }
 
+function openGrupo(id) {
+  const c = chatMeta[id];
+  if (!c) return;
+  activeChat = { id, type:'grupo', title: c.title || 'Grupo',
+                 sub: (c.participants||[]).length + ' miembros' };
+  mountThread();
+}
+
 function mountThread() {
   marcarLeido(activeChat.id);
   marcarVisto(activeChat.id, msOf((chatMeta[activeChat.id]||{}).lastAt));
@@ -1219,6 +1239,8 @@ function mountThread() {
   document.getElementById('threadS').textContent = activeChat.sub;
   document.getElementById('threadAva').innerHTML = activeChat.type==='anuncios'
     ? '<div class="conv-ava anuncios" style="width:38px;height:38px;font-size:14px"><ion-icon name="megaphone-outline"></ion-icon></div>'
+    : activeChat.type==='grupo'
+    ? '<div class="conv-ava grupo" style="width:38px;height:38px;font-size:14px"><ion-icon name="people-outline"></ion-icon></div>'
     : avatar(activeChat.title, 38);
 
   document.getElementById('composeWrap').innerHTML = activeChat.type==='anuncios'
@@ -1356,6 +1378,13 @@ function estadoDe(m) {
   const vistos = meta.vistos || {};
   const tMs = m.createdAt?.toMillis?.() || 0;
   if (!tMs) return `<div class="msg-estado"><ion-icon name="time-outline"></ion-icon> Enviando…</div>`;
+  if (activeChat.type === 'grupo') {
+    const quienes = Object.keys(vistos)
+      .filter(p => p !== ME.pid && msOf(vistos[p]) >= tMs);
+    return quienes.length
+      ? `<div class="msg-estado visto">${quienes.slice(0,5).map(p => avatar(nombreDePid(p), 16)).join('')} Visto por ${quienes.length}</div>`
+      : `<div class="msg-estado"><ion-icon name="checkmark-done-outline"></ion-icon> Enviado</div>`;
+  }
   const otroPid = (meta.participants || []).find(p => p !== ME.pid) || '';
   return msOf(vistos[otroPid]) >= tMs
     ? `<div class="msg-estado visto">${avatar(nombreDePid(otroPid), 16)} Visto</div>`
