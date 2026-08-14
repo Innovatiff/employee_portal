@@ -29,7 +29,7 @@ const auth = firebase.auth();
 
 // ── Tiendas ──
 const STORES = {
-  '1': { name:'Tienda Despensas', short:'Despensas', color:'#b45309', soft:'#fef3c7', icon:'basket-outline' },
+  '1': { name:'Tienda', short:'Tienda', color:'#b45309', soft:'#fef3c7', icon:'basket-outline' },
   '2': { name:'Tienda Cocina',    short:'Cocina',    color:'#0e7490', soft:'#cffafe', icon:'restaurant-outline' }
 };
 const storeName  = id => (STORES[id]||{}).name  || '—';
