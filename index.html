@@ -222,7 +222,7 @@ function buildTabs() {
 
 const TITLES = {
   inicio:'Inicio', horas:'Mis Horas', pagos:'Mis Pagos',
-  permisos:'Permisos', grupo:'Grupo', pedidos:'Pedidos', registros:'Registros', reportes:'Reportes'
+  permisos:'Permisos', grupo:'Grupo', pedidos:'Pedidos', registros:'Registros', reportes:'Reportes', horario:'Mi Horario'
 };
 
 function go(tab) {
@@ -234,7 +234,7 @@ function go(tab) {
   stopChatListeners();
   ({ inicio:vInicio, horas:vHoras, pagos:vPagos, permisos:vPermisos,
      grupo:vGrupo, pedidos:vPedidos, registros:vRegistros,
-     reportes:vReportes }[tab] || vInicio)();
+     reportes:vReportes, horario:vHorario }[tab] || vInicio)();
 }
 
 const el = () => document.getElementById('view');
@@ -280,8 +280,12 @@ async function vInicio() {
     const fechasSem = diasDeSemana(lunes);
     const hoyStr2 = todayStr();
     const semana = `
-      <div class="section-t">Mi horario esta semana</div>
-      <div class="card agenda">
+      <div class="section-t" style="display:flex;align-items:center;justify-content:space-between">
+        Mi horario esta semana
+        <a onclick="go('horario')" style="cursor:pointer;color:var(--primary);font-size:12px;font-weight:650;text-transform:none;letter-spacing:0">
+          Ver próximas semanas <ion-icon name="chevron-forward-outline" style="vertical-align:-2px"></ion-icon></a>
+      </div>
+      <div class="card agenda" onclick="go('horario')" style="cursor:pointer">
         ${fechasSem.map((f, i) => {
           const t = agenda[f];
           const d = parseD(f);
@@ -463,6 +467,93 @@ async function enviarReporte() {
     btn.innerHTML = '<ion-icon name="send-outline"></ion-icon> Enviar reporte';
     toast('No se pudo enviar: ' + err.message, 'err');
   }
+}
+
+// ══════════ Mi Horario (con las próximas semanas) ══════════
+//
+// El colaborador navega semana por semana: ve sus turnos, sus horas y
+// sus permisos aprobados. La semana la arma la gerencia; aquí sólo se ve.
+let horLunes = null;
+
+async function vHorario() {
+  if (!horLunes) horLunes = lunesDe(new Date());
+  loading(2);
+  try {
+    const dias = diasDeSemana(horLunes);
+    const [agenda, permisos] = await Promise.all([
+      miHorario(horLunes).catch(() => ({})),
+      myTimeOff().catch(() => [])
+    ]);
+    const aprobados = permisos.filter(p => p.status === 'approved');
+    const conPermiso = f => aprobados.some(p => f >= p.startDate && f <= p.endDate);
+
+    const hoy = todayStr();
+    const esActual = horLunes === lunesDe(new Date());
+    const a = parseD(dias[0]), b = parseD(dias[6]);
+    const horasDe = t => {
+      if (!t) return 0;
+      const [h1,m1]=t.in.split(':').map(Number), [h2,m2]=t.out.split(':').map(Number);
+      return Math.max(0,(h2*60+m2-h1*60-m1)/60);
+    };
+    const total = dias.reduce((s,f) => s + horasDe(agenda[f]), 0);
+
+    el().innerHTML = `
+      <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="moverSemanaH(-1)" aria-label="Semana anterior">
+          <ion-icon name="chevron-back-outline"></ion-icon></button>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:15px;font-weight:700">${a.getDate()} ${MCORTO[a.getMonth()]} – ${b.getDate()} ${MCORTO[b.getMonth()]}</div>
+          <div style="font-size:11.5px;color:var(--muted)">${esActual ? 'Semana actual' : ''}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="moverSemanaH(1)" aria-label="Semana siguiente">
+          <ion-icon name="chevron-forward-outline"></ion-icon></button>
+      </div>
+      ${!esActual ? `<button class="btn btn-ghost btn-block" onclick="horLunes=null;vHorario()" style="margin-bottom:12px">
+        <ion-icon name="today-outline"></ion-icon> Volver a esta semana</button>` : ''}
+
+      <div class="card">
+        ${dias.map((f, i) => {
+          const t = agenda[f];
+          const d = parseD(f);
+          const permiso = conPermiso(f);
+          return `<div class="hor-dia ${f === hoy ? 'hoy' : ''}">
+            <div class="hor-fecha">
+              <div class="hor-nom">${DCORTO[(i + 1) % 7]}</div>
+              <div class="hor-num">${d.getDate()}</div>
+            </div>
+            <div class="hor-info">
+              ${permiso ? `<span class="badge b-amber"><ion-icon name="airplane-outline" style="vertical-align:-1px"></ion-icon> Permiso</span>`
+               : t ? `<div class="hor-turno">${t.in} – ${t.out}</div>
+                      <div class="hor-sub">${numESp(horasDe(t))} horas</div>`
+               : `<span class="hor-libre">Libre</span>`}
+            </div>
+            ${f === hoy ? '<span class="badge b-green">Hoy</span>' : ''}
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:10px">
+        <div class="kpi-ico ico-p" style="margin:0"><ion-icon name="time-outline"></ion-icon></div>
+        <div style="flex:1"><div style="font-size:12px;color:var(--muted)">Total de la semana</div>
+          <div style="font-size:19px;font-weight:800">${numESp(total)} horas</div></div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin:4px 2px">
+        El horario lo publica la gerencia; si una semana aparece vacía es que
+        aún no está armada. Cualquier duda, escríbele por el chat.
+      </p>`;
+  } catch (err) { errView(err); }
+}
+
+function moverSemanaH(n) {
+  const d = parseD(horLunes || lunesDe(new Date()));
+  d.setDate(d.getDate() + n * 7);
+  horLunes = toDateStr(d);
+  vHorario();
+}
+
+// Horas con coma y sin ceros de sobra: 8, 7,5, 7,25
+function numESp(n) {
+  return String(Math.round(n * 100) / 100).replace('.', ',');
 }
 
 // ══════════ Registros de viaje ══════════
