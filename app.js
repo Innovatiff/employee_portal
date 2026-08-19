@@ -698,6 +698,14 @@ function setupPush() {
   document.querySelector('.appbar').insertAdjacentElement('afterend', bar);
 }
 
+// ── Mensaje del día que dejó la gerencia ──
+async function getMensajeDia() {
+  try {
+    const doc = await db.collection('Config').doc('mensaje').get();
+    return doc.exists ? doc.data() : { texto: '' };
+  } catch (e) { return { texto: '' }; }   // sin mensaje no se rompe nada
+}
+
 // ══ Tareas del día (checklists de mi tienda) ══
 
 async function getTareasHoy() {

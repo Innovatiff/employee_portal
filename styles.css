@@ -858,3 +858,16 @@ ion-icon {
 .hor-turno { font-size:15px; font-weight:700; font-variant-numeric:tabular-nums; }
 .hor-sub { font-size:12px; color:var(--muted); margin-top:1px; }
 .hor-libre { font-size:13.5px; color:var(--light); }
+
+/* ══ Mensaje del día de la gerencia ══ */
+.mdia {
+  display:flex; align-items:flex-start; gap:12px;
+  background:linear-gradient(120deg,#4f46e5,#7c3aed 55%,#d946ef);
+  color:#fff; border-radius:16px; padding:16px 16px 14px; margin-bottom:14px;
+  box-shadow:0 8px 22px rgba(79,70,229,.28);
+  animation:up .3s var(--ease) both;
+}
+.mdia-ico { font-size:20px; margin-top:2px; flex-shrink:0; }
+.mdia-cuerpo { flex:1; min-width:0; }
+.mdia-texto { font-size:15px; font-weight:650; line-height:1.5; letter-spacing:-.01em; }
+.mdia-firma { font-size:12px; opacity:.85; margin-top:5px; }

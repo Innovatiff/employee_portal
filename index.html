@@ -246,8 +246,9 @@ async function vInicio() {
   try {
     const p = curPeriod();
     const lunes = lunesDe(new Date());
-    const [open, cis, agenda] = await Promise.all([
-      myOpenShift(), myClockIns(p.start, p.end), miHorario(lunes).catch(() => ({}))]);
+    const [open, cis, agenda, mdia] = await Promise.all([
+      myOpenShift(), myClockIns(p.start, p.end), miHorario(lunes).catch(() => ({})),
+      getMensajeDia()]);
 
     const done   = cis.filter(c => c.clockOut);
     const horas  = done.reduce((s,c)=>s+(c.hours||0),0);
@@ -303,6 +304,15 @@ async function vInicio() {
         <div style="font-size:24px;font-weight:800;letter-spacing:-.04em">Hola, ${esc((ME.name||'').split(' ')[0])}</div>
         <div style="font-size:13.5px;color:var(--muted);margin-top:2px">${esc(ME.jobTitle)} · ${storeName(ME.store)}</div>
       </div>
+
+      ${mdia && mdia.texto ? `
+      <div class="mdia">
+        <ion-icon name="sparkles-outline" class="mdia-ico"></ion-icon>
+        <div class="mdia-cuerpo">
+          <div class="mdia-texto">"${esc(mdia.texto)}"</div>
+          <div class="mdia-firma">— ${esc(mdia.por || 'Gerencia')}</div>
+        </div>
+      </div>` : ''}
 
       ${turno}
 
