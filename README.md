@@ -1,4 +1,4 @@
-# El Águila — Portal del Colaborador
+# Águila — Portal del Colaborador
 
 Aplicación web para el equipo de **Tienda Despensas** y **Tienda Cocina**.
 Pensada primero para teléfono.

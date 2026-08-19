@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════
-//  El Águila — Portal del Colaborador
+//  Águila — Portal del Colaborador
 //
 //  Cada colaborador entra con su correo y su contraseña. La cuenta la
 //  crea la gerencia al contratar, y deja constancia en Colaboradores/{uid},
@@ -654,7 +654,7 @@ function avisarInstalar() {
       <div class="push-ask-t">Instala la app para recibir avisos</div>
       <div class="push-ask-s">
         Toca <strong>Compartir</strong> abajo y elige <strong>Añadir a inicio</strong>.
-        Luego abre El Águila desde el icono nuevo.
+        Luego abre Águila desde el icono nuevo.
       </div>
     </div>
     <button class="push-no" aria-label="Ahora no"><ion-icon name="close-outline"></ion-icon></button>`;

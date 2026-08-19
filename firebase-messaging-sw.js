@@ -1,4 +1,4 @@
-/* El Águila — trabajador de servicio del portal.
+/* Águila — trabajador de servicio del portal.
    Tiene que estar en la raíz y llamarse exactamente así: el SDK de
    Firebase lo busca por ese nombre. Corre aparte de la página, así que
    sigue vivo con la app cerrada; por eso repite la configuración. */

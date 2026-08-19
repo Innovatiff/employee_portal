@@ -1,6 +1,6 @@
 {
-  "name": "El Águila — Portal del Colaborador",
-  "short_name": "El Águila",
+  "name": "Águila — Portal del Colaborador",
+  "short_name": "Águila",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
