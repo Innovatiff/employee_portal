@@ -293,8 +293,9 @@ async function vInicio() {
           return `<div class="agenda-dia ${f === hoyStr2 ? 'hoy' : ''}">
             <div class="agenda-nom">${DCORTO[(i + 1) % 7]}</div>
             <div class="agenda-num">${d.getDate()}</div>
-            ${(t && !esLibre(t)) ? `<div class="agenda-turno">${t.in}<br>${t.out}</div>`
-                : `<div class="agenda-libre">Libre</div>`}
+            ${esLibre(t) ? `<div class="agenda-libre">Libre</div>`
+                : t ? `<div class="agenda-turno">${t.in}<br>${t.out}</div>`
+                : `<div class="agenda-pend" title="Pendiente por registrar">Pendiente</div>`}
           </div>`;
         }).join('')}
       </div>`;
@@ -507,10 +508,6 @@ async function vHorario() {
     };
     const total = dias.reduce((s,f) => s + horasDe(agenda[f]), 0);
 
-    // Si la semana todavía no tiene nada publicado, los días vacíos no son
-    // descanso: es que aún no está armada. Ahí no se felicita a nadie.
-    const semanaPublicada = dias.some(f => agenda[f]);
-
     el().innerHTML = `
       <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
         <button class="btn btn-ghost btn-sm" onclick="moverSemanaH(-1)" aria-label="Semana anterior">
@@ -541,8 +538,7 @@ async function vHorario() {
                       <div class="hor-sub">Disfruta tu día libre 🍵</div>`
                : t ? `<div class="hor-turno">${t.in} – ${t.out}</div>
                       <div class="hor-sub">${numESp(horasDe(t))} horas</div>`
-               : `<span class="hor-libre">Libre</span>
-                  ${semanaPublicada ? '<div class="hor-sub">Disfruta tu día libre 🍵</div>' : ''}`}
+               : `<span class="hor-pend">Pendiente por registrar</span>`}
             </div>
             ${f === hoy ? '<span class="badge b-green">Hoy</span>' : ''}
           </div>`;
@@ -555,8 +551,8 @@ async function vHorario() {
           <div style="font-size:19px;font-weight:800">${numESp(total)} horas</div></div>
       </div>
       <p style="font-size:12px;color:var(--muted);margin:4px 2px">
-        El horario lo publica el SFM; si una semana aparece vacía es que
-        aún no está armada. Cualquier duda, escríbele por el chat.
+        El horario lo publica el SFM. Los días que dicen «Pendiente por
+        registrar» todavía no se asignan. Cualquier duda, escríbele por el chat.
       </p>`;
   } catch (err) { errView(err); }
 }
