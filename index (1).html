@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%234f46e5'/%3E%3Cg transform='translate(2.8 8.03) scale(0.726)'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M8.6 27C7.6 15.4 15.4 5.4 26.6 5.4C33.4 5.4 37.6 9.2 39 14.3L46.3 16.9C49.5 18.1 49.9 21.3 46.7 25.5C44.9 27.9 42.7 29.6 40.5 30.4C41.9 27.6 41.7 25 40.5 23.6C38.7 21.7 36.1 21.2 33.7 22C32.1 23.8 30.7 26 29.3 28.2C27.7 30.7 26.3 33.8 25 38.6L10.6 33.2C9.2 31.2 8.7 29 8.6 27ZM28.9 13.3C31.1 12.3 33.7 13.1 34.3 15.1C33.1 16.5 30.5 16.5 28.9 15.3Z'/%3E%3C/g%3E%3C/svg%3E">
+<title>Águila — Portal</title>
+<link rel="stylesheet" href="styles.css">
+<script type="module" src="https://unpkg.com/ionicons@8.0.13/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@8.0.13/dist/ionicons/ionicons.js"></script>
+</head>
+<body>
+
+<!-- ══════════ Acceso ══════════ -->
+<div class="login" id="loginScreen">
+  <div class="login-inner">
+    <div class="login-brand">
+      <div class="login-logo">
+        <svg viewBox="7 0 44 44"><path fill-rule="evenodd" d="M8.6 27C7.6 15.4 15.4 5.4 26.6 5.4C33.4 5.4 37.6 9.2 39 14.3L46.3 16.9C49.5 18.1 49.9 21.3 46.7 25.5C44.9 27.9 42.7 29.6 40.5 30.4C41.9 27.6 41.7 25 40.5 23.6C38.7 21.7 36.1 21.2 33.7 22C32.1 23.8 30.7 26 29.3 28.2C27.7 30.7 26.3 33.8 25 38.6L10.6 33.2C9.2 31.2 8.7 29 8.6 27ZM28.9 13.3C31.1 12.3 33.7 13.1 34.3 15.1C33.1 16.5 30.5 16.5 28.9 15.3Z"/></svg>
+      </div>
+      <div class="login-name">Águila</div>
+      <div class="login-sub">Portal del Colaborador</div>
+    </div>
+
+    <div class="login-card">
+      <h2>Inicia sesión</h2>
+      <p>Con el correo que registró tu SFM.</p>
+
+      <div class="alert err" id="loginAlert"><ion-icon name="alert-circle-outline"></ion-icon><span id="loginAlertMsg"></span></div>
+
+      <form onsubmit="doLogin(event)">
+        <div class="field">
+          <label>Correo electrónico</label>
+          <input type="email" id="email" placeholder="tu@correo.com" required autocomplete="email" inputmode="email">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="pass" placeholder="Tu contraseña" required autocomplete="current-password">
+            <button type="button" class="pw-eye" onclick="togglePw()"><ion-icon name="eye-outline" id="pwIco"></ion-icon></button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block" id="loginBtn" style="margin-top:6px">
+          <ion-icon name="log-in-outline"></ion-icon> Entrar
+        </button>
+      </form>
+
+      <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-sm" style="background:none;color:var(--muted)" onclick="forgotPass()">
+          ¿Olvidaste tu contraseña?
+        </button>
+      </div>
+
+      <p style="font-size:12px;color:var(--light);text-align:center;margin-top:14px;line-height:1.5">
+        La primera vez, tu contraseña es el PIN de 6 dígitos que te dio tu SFM.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ App ══════════ -->
+<div class="app" id="app">
+  <header class="appbar">
+    <div style="flex:1">
+      <h1 id="barTitle">Inicio</h1>
+      <span class="sub" id="barSub"></span>
+    </div>
+    <button class="bell" id="bell" onclick="go('grupo')" aria-label="Avisos" hidden>
+      <ion-icon name="notifications-outline"></ion-icon><span class="bell-dot" id="bellDot"></span>
+    </button>
+    <div id="barAva" onclick="showPerfil()" style="cursor:pointer"></div>
+  </header>
+
+  <main id="view" class="view"></main>
+
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+
+<!-- Conversación a pantalla completa -->
+<div class="thread" id="thread">
+  <div class="thread-bar">
+    <button class="back" onclick="closeThread()"><ion-icon name="chevron-back-outline"></ion-icon></button>
+    <div id="threadAva"></div>
+    <div style="flex:1;min-width:0">
+      <div class="thread-n" id="threadN"></div>
+      <div class="thread-s" id="threadS"></div>
+    </div>
+  </div>
+  <div class="msgs" id="msgs"></div>
+  <div id="composeWrap"></div>
+</div>
+
+<!-- Comprobante de pago a pantalla completa -->
+<div class="stub" id="stub">
+  <div class="stub-bar">
+    <button class="back" onclick="cerrarComprobante()"><ion-icon name="chevron-back-outline"></ion-icon></button>
+    <div class="stub-bar-t">Comprobante de pago</div>
+    <button class="stub-dl" onclick="window.print()" title="Guardar o imprimir">
+      <ion-icon name="download-outline"></ion-icon>
+    </button>
+  </div>
+  <div class="stub-scroll"><div class="stub-doc" id="stubDoc"></div></div>
+</div>
+
+<!-- Hoja inferior -->
+<div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-grip"></div>
+  <div id="sheetBody"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+<script src="app.js"></script>
+<script>
+// ══════════ Acceso ══════════
+function togglePw() {
+  const i = document.getElementById('pass'), c = document.getElementById('pwIco');
+  const show = i.type === 'password';
+  i.type = show ? 'text' : 'password';
+  c.setAttribute('name', show ? 'eye-off-outline' : 'eye-outline');
+}
+function loginErr(msg) {
+  const a = document.getElementById('loginAlert');
+  document.getElementById('loginAlertMsg').textContent = msg;
+  a.className = 'alert err on';
+}
+function loginOk(msg) {
+  const a = document.getElementById('loginAlert');
+  document.getElementById('loginAlertMsg').textContent = msg;
+  a.className = 'alert ok on';
+}
+
+async function doLogin(e) {
+  e.preventDefault();
+  document.getElementById('loginAlert').className = 'alert';
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<ion-icon name="sync-outline" class="gira"></ion-icon> Entrando...';
+  try {
+    await auth.signInWithEmailAndPassword(
+      document.getElementById('email').value.trim(),
+      document.getElementById('pass').value);
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<ion-icon name="log-in-outline"></ion-icon> Entrar';
+    loginErr({
+      'auth/user-not-found':    'No existe una cuenta con ese correo.',
+      'auth/wrong-password':    'Contraseña incorrecta.',
+      'auth/invalid-credential':'Correo o contraseña incorrectos.',
+      'auth/invalid-email':     'Ese correo no es válido.',
+      'auth/too-many-requests': 'Demasiados intentos. Espera un momento.'
+    }[err.code] || err.message);
+  }
+}
+
+async function forgotPass() {
+  const email = document.getElementById('email').value.trim();
+  if (!email) { loginErr('Escribe tu correo primero y vuelve a tocar aquí.'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    loginOk('Te enviamos un correo para restablecer tu contraseña.');
+  } catch (err) {
+    loginErr(err.code === 'auth/user-not-found'
+      ? 'No existe una cuenta con ese correo.' : err.message);
+  }
+}
+
+function logout() { auth.signOut().then(() => location.reload()); }
+
+// ══════════ Arranque ══════════
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    document.getElementById('loginScreen').style.display = '';
+    document.getElementById('app').classList.remove('on');
+    return;
+  }
+  try {
+    await loadSession(user);
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').classList.add('on');
+    document.getElementById('barAva').innerHTML = avatar(ME.name, 36);
+    buildTabs();
+    watchChats();
+    revisarRecibos();
+    setupPush();
+    go('inicio');
+  } catch (err) {
+    await auth.signOut();
+    document.getElementById('loginScreen').style.display = '';
+    loginErr(err.message);
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = false;
+    btn.innerHTML = '<ion-icon name="log-in-outline"></ion-icon> Entrar';
+  }
+});
+
+// ══════════ Navegación ══════════
+const TABS = [
+  { id:'inicio',   ico:'home-outline',              lbl:'Inicio'   },
+  { id:'horas',    ico:'time-outline',              lbl:'Horas'    },
+  { id:'pagos',    ico:'receipt-outline',lbl:'Pagos'    },
+  { id:'permisos', ico:'calendar-outline',      lbl:'Permisos' },
+  { id:'grupo',    ico:'chatbubbles-outline',           lbl:'Grupo'    }
+];
+let TAB = 'inicio';
+
+function buildTabs() {
+  document.getElementById('tabbar').innerHTML = TABS.map(t =>
+    `<button class="tab ${t.id===TAB?'on':''}" data-t="${t.id}" onclick="go('${t.id}')">
+       <ion-icon name="${t.ico}"></ion-icon><span>${t.lbl}</span></button>`).join('');
+}
+
+const TITLES = {
+  inicio:'Inicio', horas:'Mis Horas', pagos:'Mis Pagos',
+  permisos:'Permisos', grupo:'Grupo', pedidos:'Pedidos', registros:'Registros', reportes:'Reportes', horario:'Mi Horario'
+};
+
+function go(tab) {
+  TAB = tab;
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  document.getElementById('barTitle').textContent = TITLES[tab] || '';
+  document.getElementById('barSub').textContent = tab === 'inicio'
+    ? fDateLong(new Date()) : (ME ? storeName(ME.store) : '');
+  stopChatListeners();
+  ({ inicio:vInicio, horas:vHoras, pagos:vPagos, permisos:vPermisos,
+     grupo:vGrupo, pedidos:vPedidos, registros:vRegistros,
+     reportes:vReportes, horario:vHorario }[tab] || vInicio)();
+}
+
+const el = () => document.getElementById('view');
+const loading = (n=3) => el().innerHTML = '<div class="skel-card"></div>'.repeat(n);
+
+// ══════════ Inicio ══════════
+async function vInicio() {
+  loading(3);
+  try {
+    const p = curPeriod();
+    const lunes = lunesDe(new Date());
+    const [open, cis, agenda, mdia] = await Promise.all([
+      myOpenShift(), myClockIns(p.start, p.end), miHorario(lunes).catch(() => ({})),
+      getMensajeDia()]);
+
+    const done   = cis.filter(c => c.clockOut);
+    const horas  = done.reduce((s,c)=>s+(c.hours||0),0);
+    const dias   = new Set(done.map(c=>c.date)).size;
+    const hoy    = done.filter(c=>c.date===todayStr()).reduce((s,c)=>s+(c.hours||0),0);
+    const estim  = horas * ME.rate;
+
+    let turno;
+    if (open) {
+      const desde = open.clockIn.toDate();
+      const trans = ((Date.now()-desde.getTime())/3600000);
+      // Un turno de otro día es un olvido, no una jornada de treinta horas
+      const olvido = open.date && open.date !== todayStr();
+      turno = `<div class="shift activo">
+        <div class="shift-top"><span class="pip"></span>${olvido ? 'TURNO SIN CERRAR' : 'TURNO ABIERTO'}</div>
+        <div class="shift-big">${trans.toFixed(2)} h</div>
+        <div class="shift-sub">${olvido
+          ? `Del ${fDate(open.date)}. Ciérralo en el reloj de la tienda y avisa a tu SFM.`
+          : `Entraste a las ${fTime(desde)}`}</div>
+      </div>`;
+    } else {
+      turno = `<div class="shift inactivo">
+        <div class="shift-top"><span class="pip"></span>SIN TURNO ABIERTO</div>
+        <div class="shift-big">${hoy.toFixed(2)} h</div>
+        <div class="shift-sub">${hoy>0 ? 'Trabajadas hoy' : 'Marca tu entrada en el reloj de la tienda'}</div>
+      </div>`;
+    }
+
+    // Semana en curso: siete pastillas, la de hoy destacada
+    const fechasSem = diasDeSemana(lunes);
+    const hoyStr2 = todayStr();
+    const semana = `
+      <div class="section-t" style="display:flex;align-items:center;justify-content:space-between">
+        Mi horario esta semana
+        <a onclick="go('horario')" style="cursor:pointer;color:var(--primary);font-size:12px;font-weight:650;text-transform:none;letter-spacing:0">
+          Ver próximas semanas <ion-icon name="chevron-forward-outline" style="vertical-align:-2px"></ion-icon></a>
+      </div>
+      <div class="card agenda" onclick="go('horario')" style="cursor:pointer">
+        ${fechasSem.map((f, i) => {
+          const t = agenda[f];
+          const d = parseD(f);
+          return `<div class="agenda-dia ${f === hoyStr2 ? 'hoy' : ''}">
+            <div class="agenda-nom">${DCORTO[(i + 1) % 7]}</div>
+            <div class="agenda-num">${d.getDate()}</div>
+            ${(t && !esLibre(t)) ? `<div class="agenda-turno">${t.in}<br>${t.out}</div>`
+                : `<div class="agenda-libre">Libre</div>`}
+          </div>`;
+        }).join('')}
+      </div>`;
+
+    el().innerHTML = `
+      <div style="margin-bottom:16px">
+        <div style="font-size:24px;font-weight:800;letter-spacing:-.04em">Hola, ${esc((ME.name||'').split(' ')[0])}</div>
+        <div style="font-size:13.5px;color:var(--muted);margin-top:2px">${esc(ME.jobTitle)} · ${storeName(ME.store)}</div>
+      </div>
+
+      ${mdia && mdia.texto ? `
+      <div class="mdia">
+        <ion-icon name="sparkles-outline" class="mdia-ico"></ion-icon>
+        <div class="mdia-cuerpo">
+          <div class="mdia-texto">"${esc(mdia.texto)}"</div>
+          <div class="mdia-firma">— ${esc(mdia.por || 'SFM')}</div>
+        </div>
+      </div>` : ''}
+
+      ${turno}
+
+      <div id="tareasHoy"></div>
+
+      ${semana}
+
+      <div class="section-t">Período actual · ${perLabel(p)}</div>
+      <div class="kpis">
+        <div class="kpi"><div class="kpi-ico ico-p"><ion-icon name="time-outline"></ion-icon></div>
+          <div class="kpi-l">Horas</div><div class="kpi-v">${horas.toFixed(2)}</div></div>
+        <div class="kpi"><div class="kpi-ico ico-c"><ion-icon name="calendar-outline"></ion-icon></div>
+          <div class="kpi-l">Días</div><div class="kpi-v">${dias}</div></div>
+        <div class="kpi"><div class="kpi-ico ico-g"><ion-icon name="cash-outline"></ion-icon></div>
+          <div class="kpi-l">Estimado</div><div class="kpi-v" style="font-size:19px">${money(estim)}</div></div>
+        <div class="kpi"><div class="kpi-ico ico-a"><ion-icon name="hourglass-outline"></ion-icon></div>
+          <div class="kpi-l">Tarifa</div><div class="kpi-v" style="font-size:19px">${money(ME.rate)}</div></div>
+      </div>
+
+      <div class="section-t">Accesos</div>
+      <div class="card">
+        <div class="row row-link" onclick="go('permisos');openPermisoSheet()">
+          <div class="kpi-ico ico-a" style="margin:0"><ion-icon name="airplane-outline"></ion-icon></div>
+          <div class="row-main"><div class="row-t">Solicitar permiso</div>
+            <div class="row-s">Vacaciones, enfermedad o personal</div></div>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
+        </div>
+        ${ME.canRegistros ? `
+        <div class="row row-link" onclick="go('registros')">
+          <div class="kpi-ico ico-g" style="margin:0"><ion-icon name="car-outline"></ion-icon></div>
+          <div class="row-main"><div class="row-t">Registrar viaje</div>
+            <div class="row-s" id="inicioViajeSub">Kilometraje de tus viajes</div></div>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
+        </div>` : ''}
+        ${ME.canPedidos ? `
+        <div class="row row-link" onclick="go('pedidos')">
+          <div class="kpi-ico ico-p" style="margin:0"><ion-icon name="clipboard-outline"></ion-icon></div>
+          <div class="row-main"><div class="row-t">Pedidos</div>
+            <div class="row-s">Listas de ${storeShort(ME.store)}</div></div>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
+        </div>` : ''}
+        <div class="row row-link" onclick="go('reportes')">
+          <div class="kpi-ico" style="margin:0;background:var(--red-soft);color:#be123c"><ion-icon name="warning-outline"></ion-icon></div>
+          <div class="row-main"><div class="row-t">Reportar incidente</div>
+            <div class="row-s">Con foto, directo al SFM</div></div>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
+        </div>
+        <div class="row row-link" onclick="go('grupo')">
+          <div class="kpi-ico ico-c" style="margin:0"><ion-icon name="megaphone-outline"></ion-icon></div>
+          <div class="row-main"><div class="row-t">Anuncios y mensajes</div>
+            <div class="row-s">Novedades del equipo</div></div>
+          <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
+        </div>
+      </div>`;
+    pintarTareasHoy();
+  } catch (err) { errView(err); }
+}
+
+// ── Tareas del día (checklist de mi tienda) ──
+let tareasHoy = [], hechosHoy = {};
+async function pintarTareasHoy() {
+  const host = document.getElementById('tareasHoy');
+  if (!host) return;
+  try {
+    [tareasHoy, hechosHoy] = await Promise.all([getTareasHoy(), getHechosHoy()]);
+  } catch (err) { console.warn('tareas', err); return; }
+  if (!tareasHoy.length) { host.innerHTML = ''; return; }
+
+  host.innerHTML = `
+    <div class="section-t">Tareas de hoy</div>
+    ${tareasHoy.map(t => {
+      const h = (hechosHoy[t.id] && hechosHoy[t.id].hechos) || {};
+      const items = t.items || [];
+      const n = items.filter((_,i) => h[i]).length;
+      const pct = items.length ? Math.round(n/items.length*100) : 0;
+      return `<div class="card chk-card ${n===items.length && items.length ? 'lista' : ''}" style="padding:14px 15px">
+        <div class="chk-head"><strong>${esc(t.titulo)}</strong>
+          <div class="chk-progreso"><div class="chk-barra"><span style="width:${pct}%"></span></div>
+            <em>${n}/${items.length}</em></div></div>
+        ${items.map((it, i) => {
+          const q = h[i];
+          return `<label class="chk-item ${q ? 'ok' : ''}">
+            <input type="checkbox" ${q?'checked':''} onchange="toggleTarea('${t.id}',${i},this)">
+            <span class="chk-caja"><ion-icon name="checkmark-outline"></ion-icon></span>
+            <span class="chk-texto">${esc(it)}</span>
+            ${q ? `<span class="chk-quien">${esc((q.nombre||'').split(' ')[0])}</span>` : ''}
+          </label>`;
+        }).join('')}
+      </div>`;
+    }).join('')}`;
+}
+
+async function toggleTarea(tareaId, idx, chk) {
+  chk.disabled = true;
+  try {
+    await marcarItem(tareaId, idx, chk.checked);
+    const doc = hechosHoy[tareaId] || (hechosHoy[tareaId] = { hechos:{} });
+    if (chk.checked) doc.hechos[idx] = { nombre: ME.name, at: Date.now() };
+    else delete doc.hechos[idx];
+    pintarTareasHoy();
+  } catch (err) {
+    chk.checked = !chk.checked; chk.disabled = false;
+    toast('No se pudo guardar: ' + err.message, 'err');
+  }
+}
+
+// ══════════ Reportes de incidentes ══════════
+async function vReportes() {
+  loading(2);
+  try {
+    const lista = await misReportes();
+    el().innerHTML = `
+      <button class="btn btn-primary btn-block" onclick="abrirReporte()" style="margin-bottom:16px">
+        <ion-icon name="warning-outline"></ion-icon> Reportar incidente
+      </button>
+      <div class="section-t">Mis reportes</div>
+      ${lista.length ? lista.map(r => `
+        <div class="card" style="padding:14px 15px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            ${(r.status||'nuevo')==='nuevo'
+              ? '<span class="badge b-amber">Enviado</span>'
+              : '<span class="badge b-green">Revisado por el SFM</span>'}
+            <span style="margin-left:auto;font-size:12px;color:var(--light)">${fDate(r.date)}</span>
+          </div>
+          <p style="margin:9px 0 0;font-size:14px;line-height:1.55;white-space:pre-wrap">${esc(r.texto||'')}</p>
+          ${r.foto ? `<img src="${r.foto}" alt="Foto" loading="lazy" onclick="verFoto('${r.foto}')"
+            style="margin-top:10px;width:100%;max-width:260px;border-radius:10px;border:1px solid var(--line);aspect-ratio:${(r.w||4)}/${(r.h||3)};object-fit:cover">` : ''}
+        </div>`).join('')
+      : `<div class="card"><div class="empty"><ion-icon name="shield-checkmark-outline"></ion-icon>
+          <p>No has enviado reportes.</p></div></div>`}`;
+  } catch (err) { errView(err); }
+}
+
+function abrirReporte() {
+  openSheet(`
+    <h3>Reportar incidente</h3>
+    <p class="lead">Le llega directo al SFM con un aviso.</p>
+    <div class="field"><label>¿Qué pasó?</label>
+      <textarea id="repTxt" rows="4" placeholder="Describe el incidente..."></textarea></div>
+    <div class="field"><label>Foto (opcional)</label>
+      <input type="file" id="repFile" accept="image/*"></div>
+    <button class="btn btn-primary btn-block" id="repBtn" onclick="enviarReporte()">
+      <ion-icon name="send-outline"></ion-icon> Enviar reporte</button>`);
+}
+
+async function enviarReporte() {
+  const texto = document.getElementById('repTxt').value.trim();
+  if (!texto) { toast('Describe lo que pasó.', 'err'); return; }
+  const file = document.getElementById('repFile').files[0] || null;
+  const btn = document.getElementById('repBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<ion-icon name="sync-outline" class="gira"></ion-icon> Enviando...';
+  try {
+    await crearReporte({ texto, file }, pct => {
+      if (pct !== null) btn.innerHTML = `Subiendo foto ${pct}%`;
+    });
+    closeSheet();
+    toast('Reporte enviado al SFM', 'ok');
+    vReportes();
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = '<ion-icon name="send-outline"></ion-icon> Enviar reporte';
+    toast('No se pudo enviar: ' + err.message, 'err');
+  }
+}
+
+// ══════════ Mi Horario (con las próximas semanas) ══════════
+//
+// El colaborador navega semana por semana: ve sus turnos, sus horas y
+// sus permisos aprobados. La semana la arma el SFM; aquí sólo se ve.
+let horLunes = null;
+
+async function vHorario() {
+  if (!horLunes) horLunes = lunesDe(new Date());
+  loading(2);
+  try {
+    const dias = diasDeSemana(horLunes);
+    const [agenda, permisos] = await Promise.all([
+      miHorario(horLunes).catch(() => ({})),
+      myTimeOff().catch(() => [])
+    ]);
+    const aprobados = permisos.filter(p => p.status === 'approved');
+    const conPermiso = f => aprobados.some(p => f >= p.startDate && f <= p.endDate);
+
+    const hoy = todayStr();
+    const esActual = horLunes === lunesDe(new Date());
+    const a = parseD(dias[0]), b = parseD(dias[6]);
+    const horasDe = t => {
+      if (!t || esLibre(t)) return 0;
+      const [h1,m1]=t.in.split(':').map(Number), [h2,m2]=t.out.split(':').map(Number);
+      return Math.max(0,(h2*60+m2-h1*60-m1)/60);
+    };
+    const total = dias.reduce((s,f) => s + horasDe(agenda[f]), 0);
+
+    // Si la semana todavía no tiene nada publicado, los días vacíos no son
+    // descanso: es que aún no está armada. Ahí no se felicita a nadie.
+    const semanaPublicada = dias.some(f => agenda[f]);
+
+    el().innerHTML = `
+      <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <button class="btn btn-ghost btn-sm" onclick="moverSemanaH(-1)" aria-label="Semana anterior">
+          <ion-icon name="chevron-back-outline"></ion-icon></button>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:15px;font-weight:700">${a.getDate()} ${MCORTO[a.getMonth()]} – ${b.getDate()} ${MCORTO[b.getMonth()]}</div>
+          <div style="font-size:11.5px;color:var(--muted)">${esActual ? 'Semana actual' : ''}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="moverSemanaH(1)" aria-label="Semana siguiente">
+          <ion-icon name="chevron-forward-outline"></ion-icon></button>
+      </div>
+      ${!esActual ? `<button class="btn btn-ghost btn-block" onclick="horLunes=null;vHorario()" style="margin-bottom:12px">
+        <ion-icon name="today-outline"></ion-icon> Volver a esta semana</button>` : ''}
+
+      <div class="card">
+        ${dias.map((f, i) => {
+          const t = agenda[f];
+          const d = parseD(f);
+          const permiso = conPermiso(f);
+          return `<div class="hor-dia ${f === hoy ? 'hoy' : ''}">
+            <div class="hor-fecha">
+              <div class="hor-nom">${DCORTO[(i + 1) % 7]}</div>
+              <div class="hor-num">${d.getDate()}</div>
+            </div>
+            <div class="hor-info">
+              ${permiso ? `<span class="badge b-amber"><ion-icon name="airplane-outline" style="vertical-align:-1px"></ion-icon> Permiso</span>`
+               : esLibre(t) ? `<span class="hor-libre">Libre</span>
+                      <div class="hor-sub">Disfruta tu día libre 🍵</div>`
+               : t ? `<div class="hor-turno">${t.in} – ${t.out}</div>
+                      <div class="hor-sub">${numESp(horasDe(t))} horas</div>`
+               : `<span class="hor-libre">Libre</span>
+                  ${semanaPublicada ? '<div class="hor-sub">Disfruta tu día libre 🍵</div>' : ''}`}
+            </div>
+            ${f === hoy ? '<span class="badge b-green">Hoy</span>' : ''}
+          </div>`;
+        }).join('')}
+      </div>
+
+      <div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:10px">
+        <div class="kpi-ico ico-p" style="margin:0"><ion-icon name="time-outline"></ion-icon></div>
+        <div style="flex:1"><div style="font-size:12px;color:var(--muted)">Total de la semana</div>
+          <div style="font-size:19px;font-weight:800">${numESp(total)} horas</div></div>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin:4px 2px">
+        El horario lo publica el SFM; si una semana aparece vacía es que
+        aún no está armada. Cualquier duda, escríbele por el chat.
+      </p>`;
+  } catch (err) { errView(err); }
+}
+
+function moverSemanaH(n) {
+  const d = parseD(horLunes || lunesDe(new Date()));
+  d.setDate(d.getDate() + n * 7);
+  horLunes = toDateStr(d);
+  vHorario();
+}
+
+// Horas con coma y sin ceros de sobra: 8, 7,5, 7,25
+function numESp(n) {
+  return String(Math.round(n * 100) / 100).replace('.', ',');
+}
+
+// ══════════ Registros de viaje ══════════
+//
+// Dos estados y un botón grande en cada uno: sin viaje abierto se sale,
+// con viaje abierto se llega. La hora se toma sola al pulsar; quien
+// registre tarde puede escribir la hora real con "otra hora".
+
+async function vRegistros() {
+  if (!ME.canRegistros) {
+    el().innerHTML = `<div class="card"><div class="empty"><ion-icon name="lock-closed-outline"></ion-icon>
+      <p>Tu SFM no te ha dado acceso a los registros.</p></div></div>`;
+    return;
+  }
+  loading(2);
+  try {
+    const [abierto, carros, viajes] = await Promise.all([
+      miViajeAbierto(), carrosDeTienda(), misViajes(15)
+    ]);
+
+    let accion;
+    if (abierto) {
+      const desde = abierto.horaSalida?.toDate?.();
+      accion = `
+        <div class="shift activo" style="margin-bottom:14px">
+          <div class="shift-top"><span class="pip"></span>EN RUTA · ${esc(abierto.vehiculo || '')}</div>
+          <div class="shift-big">${desde ? fTime(desde) : '—'}</div>
+          <div class="shift-sub">Saliste con ${abierto.kmSalida} km</div>
+        </div>
+        <button class="btn btn-primary btn-block btn-grande" onclick="abrirLlegada()">
+          <ion-icon name="flag-outline"></ion-icon> Registrar llegada
+        </button>`;
+    } else {
+      accion = `
+        <button class="btn btn-primary btn-block btn-grande" onclick="abrirSalida()">
+          <ion-icon name="navigate-outline"></ion-icon> Iniciar viaje
+        </button>`;
+    }
+
+    const lista = viajes.length ? viajes.map(v => {
+      const enRuta = v.status === 'en-ruta';
+      return `<div class="row">
+        <div class="row-main">
+          <div class="row-t">${esc(v.vehiculo || '—')} · ${fDateShort(v.date)}</div>
+          <div class="row-s">${fTime(v.horaSalida)}${enRuta ? '' : ' – ' + fTime(v.horaLlegada)}
+            ${enRuta ? '' : ' · ' + durLabel(v.minutos)}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="row-v">${enRuta ? '…' : (v.km ?? '—') + ' km'}</div>
+          <span class="badge ${enRuta ? 'b-green' : 'b-blue'}" style="margin-top:4px">${enRuta ? 'En ruta' : 'Completado'}</span>
+        </div>
+      </div>`;
+    }).join('') : `<div class="empty"><ion-icon name="car-outline"></ion-icon><p>Todavía no tienes viajes.</p></div>`;
+
+    el().innerHTML = `
+      ${accion}
+      <div class="section-t" style="margin-top:18px">Mis viajes</div>
+      <div class="card">${lista}</div>`;
+
+    window.__carros = carros;
+  } catch (err) { errView(err); }
+}
+
+function opcionesCarro(carros) {
+  const nombres = Object.keys(carros || {});
+  const ultimo = localStorage.getItem('elaguila_carro') || '';
+  return nombres.map(n =>
+    `<option value="${esc(n)}" ${n === ultimo ? 'selected' : ''}>${esc(n)}</option>`).join('');
+}
+
+function abrirSalida() {
+  const carros = window.__carros || {};
+  const hayCarros = Object.keys(carros).length > 0;
+  openSheet(`
+    <h3>Iniciar viaje</h3>
+    <p class="lead">La hora de salida se toma sola al guardar.</p>
+
+    <label class="lbl">Carro</label>
+    ${hayCarros ? `
+      <select id="viajeCarro" onchange="precargarKm()">${opcionesCarro(carros)}
+        <option value="__otro__">Otro carro...</option></select>
+      <input type="text" id="viajeCarroNuevo" placeholder="Nombre del carro" style="display:none;margin-top:8px">`
+    : `<input type="text" id="viajeCarroNuevo" placeholder="Ej: Toyota blanco">`}
+
+    <label class="lbl" style="margin-top:12px">Kilometraje de salida</label>
+    <input type="number" id="viajeKm" inputmode="decimal" step="0.1" placeholder="Lo que marca el tablero">
+    <div class="hint-km" id="hintKm"></div>
+
+    <label class="lbl chk-otra" style="margin-top:12px">
+      <input type="checkbox" id="viajeOtraHora" onchange="document.getElementById('viajeHora').style.display = this.checked ? '' : 'none'">
+      Salí a otra hora
+    </label>
+    <input type="time" id="viajeHora" style="display:none;margin-top:6px">
+
+    <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="confirmarSalida()">
+      <ion-icon name="navigate-outline"></ion-icon> Salir ahora
+    </button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="closeSheet()">Cancelar</button>`);
+
+  const sel = document.getElementById('viajeCarro');
+  if (sel) sel.onchange = () => {
+    const otro = sel.value === '__otro__';
+    document.getElementById('viajeCarroNuevo').style.display = otro ? '' : 'none';
+    if (!otro) precargarKm();
+  };
+  precargarKm();
+}
+
+// El kilometraje de salida es casi siempre el de llegada del último viaje
+// de ese carro: se rellena solo y sólo se corrige si el tablero dice otra cosa.
+function precargarKm() {
+  const carros = window.__carros || {};
+  const sel = document.getElementById('viajeCarro');
+  const carro = sel && sel.value !== '__otro__' ? sel.value : null;
+  const km = carro && carros[carro] != null ? carros[carro] : null;
+  const input = document.getElementById('viajeKm');
+  const hint = document.getElementById('hintKm');
+  if (km != null) {
+    input.value = km;
+    hint.textContent = `El último viaje de este carro terminó en ${km} km`;
+  } else {
+    input.value = '';
+    hint.textContent = '';
+  }
+}
+
+function nombreCarroElegido() {
+  const sel = document.getElementById('viajeCarro');
+  if (sel && sel.value && sel.value !== '__otro__') return sel.value;
+  return (document.getElementById('viajeCarroNuevo').value || '').trim();
+}
+
+function horaElegida(chkId, horaId) {
+  // Sin marcar "otra hora" se usa el momento de pulsar el botón
+  const chk = document.getElementById(chkId);
+  if (!chk || !chk.checked) return firebase.firestore.Timestamp.now();
+  const v = document.getElementById(horaId).value;
+  if (!v) return null;
+  return firebase.firestore.Timestamp.fromDate(new Date(`${todayStr()}T${v}:00`));
+}
+
+async function confirmarSalida() {
+  const carro = nombreCarroElegido();
+  const km = parseFloat(document.getElementById('viajeKm').value);
+  const hora = horaElegida('viajeOtraHora', 'viajeHora');
+  if (!carro) { toast('Escribe qué carro llevas.', 'err'); return; }
+  if (isNaN(km) || km < 0) { toast('Escribe el kilometraje del tablero.', 'err'); return; }
+  if (!hora) { toast('Escribe la hora de salida.', 'err'); return; }
+  try {
+    await salirDeViaje(carro, km, hora);
+    localStorage.setItem('elaguila_carro', carro);
+    closeSheet();
+    toast('Buen viaje. Registra la llegada al volver.', 'ok');
+    vRegistros();
+  } catch (err) {
+    toast('No se pudo guardar: ' + err.message, 'err');
+  }
+}
+
+function abrirLlegada() {
+  openSheet(`
+    <h3>Registrar llegada</h3>
+    <p class="lead">La hora de llegada se toma sola al guardar.</p>
+
+    <label class="lbl">Kilometraje de llegada</label>
+    <input type="number" id="llegadaKm" inputmode="decimal" step="0.1" placeholder="Lo que marca el tablero">
+
+    <label class="lbl chk-otra" style="margin-top:12px">
+      <input type="checkbox" id="llegadaOtraHora" onchange="document.getElementById('llegadaHora').style.display = this.checked ? '' : 'none'">
+      Llegué a otra hora
+    </label>
+    <input type="time" id="llegadaHora" style="display:none;margin-top:6px">
+
+    <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="confirmarLlegada()">
+      <ion-icon name="flag-outline"></ion-icon> Llegué
+    </button>
+    <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="closeSheet()">Cancelar</button>`);
+}
+
+async function confirmarLlegada() {
+  const km = parseFloat(document.getElementById('llegadaKm').value);
+  const hora = horaElegida('llegadaOtraHora', 'llegadaHora');
+  if (isNaN(km) || km < 0) { toast('Escribe el kilometraje del tablero.', 'err'); return; }
+  if (!hora) { toast('Escribe la hora de llegada.', 'err'); return; }
+  try {
+    const abierto = await miViajeAbierto();
+    if (!abierto) { toast('No tienes ningún viaje abierto.', 'err'); vRegistros(); return; }
+    if (km < abierto.kmSalida) {
+      toast(`La llegada no puede ser menor que la salida (${abierto.kmSalida} km).`, 'err');
+      return;
+    }
+    const r = await llegarDeViaje(abierto.id, km, hora);
+    closeSheet();
+    toast(`Viaje registrado · ${r.km} km en ${durLabel(r.minutos)}`, 'ok');
+    vRegistros();
+  } catch (err) {
+    toast('No se pudo guardar: ' + err.message, 'err');
+  }
+}
+
+function errView(err) {
+  console.error(err);
+  el().innerHTML = `<div class="card"><div class="empty">
+    <ion-icon name="warning-outline"></ion-icon>
+    <p>${esc(err.message || 'No se pudieron cargar los datos.')}</p></div></div>`;
+}
+
+// ══════════ Horas ══════════
+let horasIdx = null;
+async function vHoras() {
+  if (horasIdx === null) horasIdx = perIndex(new Date());
+  loading(2);
+  try {
+    const p = perByIndex(horasIdx);
+    const cis = await myClockIns(p.start, p.end);
+    const done = cis.filter(c=>c.clockOut);
+    const horas = done.reduce((s,c)=>s+(c.hours||0),0);
+    const dias  = new Set(done.map(c=>c.date)).size;
+
+    const porDia = {};
+    cis.forEach(c => { (porDia[c.date] = porDia[c.date] || []).push(c); });
+    const fechas = Object.keys(porDia).sort().reverse();
+
+    el().innerHTML = `
+      <div class="pernav">
+        <button onclick="horasIdx--;vHoras()"><ion-icon name="chevron-back-outline"></ion-icon></button>
+        <div class="lbl"><b>${perLabel(p)}</b>
+          <span>${horasIdx === perIndex(new Date()) ? 'Período actual' : parseD(p.end).getFullYear()}</span></div>
+        <button onclick="horasIdx++;vHoras()"><ion-icon name="chevron-forward-outline"></ion-icon></button>
+      </div>
+
+      <div class="kpis" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi"><div class="kpi-l">Horas</div><div class="kpi-v">${horas.toFixed(2)}</div></div>
+        <div class="kpi"><div class="kpi-l">Días</div><div class="kpi-v">${dias}</div></div>
+        <div class="kpi"><div class="kpi-l">Estimado</div><div class="kpi-v" style="font-size:18px">${money(horas*ME.rate)}</div></div>
+      </div>
+
+      ${fechas.length === 0
+        ? `<div class="card"><div class="empty"><ion-icon name="time-outline"></ion-icon>
+             <p>No hay turnos registrados en este período.</p></div></div>`
+        : `<div class="card">${fechas.map(f => {
+            const t = porDia[f];
+            const d = parseD(f);
+            const tot = t.filter(x=>x.clockOut).reduce((s,x)=>s+(x.hours||0),0);
+            return `<div class="row">
+              <div class="row-main">
+                <div class="row-t">${DCORTO[d.getDay()]} ${fDateShort(f)}</div>
+                <div class="row-s">${t.map(x => x.clockOut
+                  ? `${fTime(x.clockIn)} – ${fTime(x.clockOut)}`
+                  : `${fTime(x.clockIn)} · <span style="color:var(--green);font-weight:600">en curso</span>`).join(' &nbsp;·&nbsp; ')}</div>
+              </div>
+              <div class="row-v">${tot.toFixed(2)}h${t.length>1?`<small>${t.length} turnos</small>`:''}</div>
+            </div>`;
+          }).join('')}</div>`}`;
+  } catch (err) { errView(err); }
+}
+
+// ══════════ Avisos de recibos ══════════
+//
+// La push sólo se ve con la app cerrada. Con la app abierta el aviso llega
+// aquí, así que la pestaña de Pagos lleva un punto igual que la de Grupo.
+// Lo ya visto se guarda en este teléfono: no hacen falta reglas nuevas y
+// "visto" es de verdad algo de cada dispositivo.
+
+const RECIBOS_VISTOS = 'elaguila_recibos_vistos';
+
+function recibosVistos() {
+  try { return new Set(JSON.parse(localStorage.getItem(RECIBOS_VISTOS) || '[]')); }
+  catch (e) { return new Set(); }
+}
+function marcarRecibosVistos(ids) {
+  const v = recibosVistos();
+  ids.forEach(id => v.add(id));
+  try { localStorage.setItem(RECIBOS_VISTOS, JSON.stringify([...v])); } catch (e) {}
+  pintarPuntoPagos(0);
+}
+function pintarPuntoPagos(n) {
+  const tab = document.querySelector('.tab[data-t="pagos"]');
+  if (tab) tab.classList.toggle('nuevo', n > 0);
+}
+
+async function revisarRecibos() {
+  try {
+    const list = await myPayStatements();
+    const vistos = recibosVistos();
+    // Un recibo en cero no tiene nada que mirar
+    const nuevos = list.filter(s => !vistos.has(s.id) && Number(s.gross || 0) > 0);
+    pintarPuntoPagos(nuevos.length);
+
+    // La primera vez no se avisa de todo el historial de golpe: se dan por
+    // vistos los que ya existían y sólo se avisa de lo que llegue después.
+    if (!localStorage.getItem(RECIBOS_VISTOS)) {
+      marcarRecibosVistos(list.map(s => s.id));
+      return;
+    }
+    if (nuevos.length) {
+      const uno = nuevos[0];
+      toast(uno.status === 'paid'
+        ? `Pago realizado: ${money(uno.gross)}`
+        : `Tu recibo de ${perLabel({ start: uno.periodStart, end: uno.periodEnd })} ya está listo`, 'ok');
+    }
+  } catch (err) { console.error('revisarRecibos', err); }
+}
+
+// ══════════ Pagos ══════════
+async function vPagos() {
+  loading(3);
+  try {
+    const list = await myPayStatements();
+    const pagado   = list.filter(s=>s.status==='paid');
+    const totalAno = pagado.reduce((s,x)=>s+(x.gross||0),0);
+
+    el().innerHTML = `
+      <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
+        <div class="kpi"><div class="kpi-ico ico-g"><ion-icon name="checkmark-circle-outline"></ion-icon></div>
+          <div class="kpi-l">Recibido</div><div class="kpi-v" style="font-size:19px">${money(totalAno)}</div></div>
+        <div class="kpi"><div class="kpi-ico ico-a"><ion-icon name="hourglass-outline"></ion-icon></div>
+          <div class="kpi-l">Pendiente</div>
+          <div class="kpi-v" style="font-size:19px">${money(list.filter(s=>s.status!=='paid').reduce((s,x)=>s+(x.gross||0),0))}</div></div>
+      </div>
+
+      <div class="section-t">Recibos</div>
+      ${list.length === 0
+        ? `<div class="card"><div class="empty"><ion-icon name="receipt-outline"></ion-icon>
+             <p>Todavía no tienes recibos.<br><span style="font-size:12.5px">Aparecerán cuando tu SFM cierre el período.</span></p></div></div>`
+        : `<div class="card">${list.map(s => {
+            const pagado = s.status === 'paid';
+            return `<div class="row row-link" onclick='verRecibo(${JSON.stringify(JSON.stringify(s))})'>
+              <div class="row-main">
+                <div class="row-t">${fDateShort(s.periodStart)} – ${fDate(s.periodEnd)}</div>
+                <div class="row-s">${(s.hours||0).toFixed(2)} h · ${money(s.rate)}/h</div>
+              </div>
+              <div style="text-align:right">
+                <div class="row-v">${money(s.gross)}</div>
+                <span class="badge ${pagado?'b-green':'b-amber'}" style="margin-top:4px">${pagado?'Pagado':'Pendiente'}</span>
+              </div>
+            </div>`;
+          }).join('')}</div>`}`;
+    marcarRecibosVistos(list.map(s => s.id));
+  } catch (err) { errView(err); }
+}
+
+function verRecibo(json) {
+  const s = JSON.parse(json);
+  const pagado = s.status === 'paid';
+  openSheet(`
+    <h3>Recibo de pago</h3>
+    <p class="lead">${fDate(s.periodStart)} — ${fDate(s.periodEnd)}</p>
+    <div class="card" style="margin-bottom:14px">
+      <div class="row"><div class="row-main"><div class="row-t">Horas trabajadas</div></div>
+        <div class="row-v">${(s.hours||0).toFixed(2)} h</div></div>
+      <div class="row"><div class="row-main"><div class="row-t">Tarifa por hora</div></div>
+        <div class="row-v">${money(s.rate)}</div></div>
+      <div class="row" style="background:var(--primary-soft)">
+        <div class="row-main"><div class="row-t">Total bruto</div>
+          <div class="row-s">Antes de deducciones</div></div>
+        <div class="row-v" style="font-size:19px;color:var(--primary)">${money(s.gross)}</div></div>
+      <div class="row"><div class="row-main"><div class="row-t">Estado</div>
+        ${s.paidDate ? `<div class="row-s">Pagado el ${fDate(s.paidDate)}</div>` : ''}</div>
+        <span class="badge ${pagado?'b-green':'b-amber'}">${pagado?'Pagado':'Pendiente'}</span></div>
+    </div>
+    <button class="btn btn-primary btn-block" onclick='closeSheet();abrirComprobante(${JSON.stringify(json)})' style="margin-bottom:9px">
+      <ion-icon name="document-text-outline"></ion-icon> Ver comprobante
+    </button>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()">Cerrar</button>`);
+}
+
+// ══════════ Comprobante de pago ══════════
+//
+// Se arma aquí con los datos del recibo en vez de guardar un archivo: así
+// no hay nada que subir ni que caduque, y el documento siempre coincide con
+// lo que tiene el SFM. El botón de descarga abre el diálogo de
+// impresión del sistema, que en teléfono ofrece "Guardar en Archivos" como
+// PDF y en computadora "Guardar como PDF".
+function abrirComprobante(json) {
+  const s = JSON.parse(json);
+  const pagado = s.status === 'paid';
+  const folio  = (s.id || '').slice(-6).toUpperCase() || '——————';
+  const bruto  = Number(s.gross || 0);
+
+  document.getElementById('stubDoc').innerHTML = `
+    <div class="stub-head">
+      <div class="stub-marca">
+        <svg viewBox="7 0 44 44" class="stub-logo" aria-hidden="true"><path fill-rule="evenodd" d="M8.6 27C7.6 15.4 15.4 5.4 26.6 5.4C33.4 5.4 37.6 9.2 39 14.3L46.3 16.9C49.5 18.1 49.9 21.3 46.7 25.5C44.9 27.9 42.7 29.6 40.5 30.4C41.9 27.6 41.7 25 40.5 23.6C38.7 21.7 36.1 21.2 33.7 22C32.1 23.8 30.7 26 29.3 28.2C27.7 30.7 26.3 33.8 25 38.6L10.6 33.2C9.2 31.2 8.7 29 8.6 27ZM28.9 13.3C31.1 12.3 33.7 13.1 34.3 15.1C33.1 16.5 30.5 16.5 28.9 15.3Z"/></svg>
+        <div>
+          <div class="stub-emp">Águila</div>
+          <div class="stub-sub">${esc(storeName(ME.store))}</div>
+        </div>
+      </div>
+      <div class="stub-tipo">
+        <div class="stub-tipo-t">Comprobante de pago</div>
+        <div class="stub-folio">Folio ${folio}</div>
+      </div>
+    </div>
+
+    <div class="stub-meta">
+      <div><span>Colaborador</span><strong>${esc(ME.name)}</strong></div>
+      <div><span>Puesto</span><strong>${esc(ME.jobTitle || '—')}</strong></div>
+      <div><span>Período</span><strong>${fDate(s.periodStart)} – ${fDate(s.periodEnd)}</strong></div>
+      <div><span>Fecha de pago</span><strong>${s.paidDate ? fDate(s.paidDate) : 'Pendiente'}</strong></div>
+    </div>
+
+    <table class="stub-tabla">
+      <thead><tr><th>Concepto</th><th class="num">Cantidad</th><th class="num">Tarifa</th><th class="num">Importe</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Horas trabajadas</td>
+          <td class="num">${(s.hours||0).toFixed(2)} h</td>
+          <td class="num">${money(s.rate)}</td>
+          <td class="num">${money(bruto)}</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr><td colspan="3">Total bruto</td><td class="num">${money(bruto)}</td></tr>
+        <tr><td colspan="3">Deducciones</td><td class="num">${money(0)}</td></tr>
+        <tr class="stub-neto"><td colspan="3">Neto a pagar</td><td class="num">${money(bruto)}</td></tr>
+      </tfoot>
+    </table>
+
+    <div class="stub-estado ${pagado ? 'ok' : 'pend'}">
+      <ion-icon name="${pagado ? 'checkmark-circle-outline' : 'hourglass-outline'}"></ion-icon>
+      ${pagado
+        ? `Pagado el ${fDate(s.paidDate)}`
+        : 'Pendiente de pago. Tu SFM lo marcará cuando se realice.'}
+    </div>
+
+    <div class="stub-pie">
+      Documento generado por Águila el ${fDateLong(new Date())}.
+      Las cifras corresponden a las horas registradas en el reloj de la tienda
+      durante el período indicado. Si algo no cuadra, habla con tu SFM.
+    </div>`;
+
+  document.getElementById('stub').classList.add('on');
+}
+
+function cerrarComprobante() {
+  document.getElementById('stub').classList.remove('on');
+}
+
+// ══════════ Permisos ══════════
+const TO_TIPO   = { vacation:'Vacaciones', sick:'Enfermedad', personal:'Personal' };
+const TO_BADGE  = { vacation:'b-blue', sick:'b-red', personal:'b-amber' };
+const TO_ESTADO = { approved:{l:'Aprobado',b:'b-green'}, pending:{l:'Pendiente',b:'b-amber'}, denied:{l:'Denegado',b:'b-red'} };
+
+async function vPermisos() {
+  loading(2);
+  try {
+    const list = await myTimeOff();
+    el().innerHTML = `
+      <button class="btn btn-primary btn-block" onclick="openPermisoSheet()" style="margin-bottom:16px">
+        <ion-icon name="add-outline"></ion-icon> Solicitar permiso
+      </button>
+
+      ${list.length === 0
+        ? `<div class="card"><div class="empty"><ion-icon name="calendar-outline"></ion-icon>
+             <p>No tienes solicitudes.</p></div></div>`
+        : `<div class="card">${list.map(t => {
+            const s = parseD(t.startDate), e = parseD(t.endDate);
+            const dias = Math.round((e-s)/86400000)+1;
+            const est = TO_ESTADO[t.status] || TO_ESTADO.pending;
+            return `<div class="row" style="align-items:flex-start">
+              <div class="row-main">
+                <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                  <span class="badge ${TO_BADGE[t.type]||'b-gray'}">${TO_TIPO[t.type]||t.type}</span>
+                  <span class="badge ${est.b}">${est.l}</span>
+                </div>
+                <div class="row-t" style="margin-top:7px">${fDateShort(t.startDate)} – ${fDate(t.endDate)}</div>
+                <div class="row-s">${dias} ${dias===1?'día':'días'}${t.note?' · '+esc(t.note):''}</div>
+                ${t.status==='denied' && t.denyReason
+                  ? `<div class="motivo"><ion-icon name="information-circle-outline"></ion-icon>
+                       <div><b>Motivo:</b> ${esc(t.denyReason)}</div></div>` : ''}
+              </div>
+            </div>`;
+          }).join('')}</div>`}`;
+  } catch (err) { errView(err); }
+}
+
+function openPermisoSheet() {
+  const hoy = todayStr();
+  openSheet(`
+    <h3>Solicitar permiso</h3>
+    <p class="lead">Tu SFM recibirá la solicitud y te responderá aquí.</p>
+    <div class="field"><label>Tipo</label>
+      <select id="toType">
+        <option value="vacation">Vacaciones</option>
+        <option value="sick">Enfermedad</option>
+        <option value="personal">Personal</option>
+      </select></div>
+    <div class="field"><label>Desde</label><input type="date" id="toStart" value="${hoy}"></div>
+    <div class="field"><label>Hasta</label><input type="date" id="toEnd" value="${hoy}"></div>
+    <div class="field"><label>Nota (opcional)</label>
+      <textarea id="toNote" placeholder="Cuéntale a tu SFM el motivo..."></textarea></div>
+    <button class="btn btn-primary btn-block" id="toBtn" onclick="enviarPermiso()">Enviar solicitud</button>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cancelar</button>`);
+}
+
+async function enviarPermiso() {
+  const start = document.getElementById('toStart').value;
+  const end   = document.getElementById('toEnd').value;
+  const type  = document.getElementById('toType').value;
+  const note  = document.getElementById('toNote').value.trim();
+  if (!start || !end) { toast('Elige las fechas.', 'err'); return; }
+  if (end < start)    { toast('La fecha final no puede ser antes de la inicial.', 'err'); return; }
+  const b = document.getElementById('toBtn');
+  b.disabled = true; b.textContent = 'Enviando...';
+  try {
+    await requestTimeOff({ startDate:start, endDate:end, type, note });
+    closeSheet();
+    toast('Solicitud enviada', 'ok');
+    vPermisos();
+  } catch (err) {
+    b.disabled = false; b.textContent = 'Enviar solicitud';
+    toast('No se pudo enviar: ' + err.message, 'err');
+  }
+}
+
+// ══════════ Pedidos ══════════
+async function vPedidos() {
+  if (!ME.canPedidos) {
+    el().innerHTML = `<div class="card"><div class="empty"><ion-icon name="lock-closed-outline"></ion-icon>
+      <p>No estás asignado para gestionar pedidos.<br>
+      <span style="font-size:12.5px">Pídeselo a tu SFM.</span></p></div></div>`;
+    return;
+  }
+  loading(3);
+  try {
+    const list = await storePedidos();
+    el().innerHTML = `
+      <button class="btn btn-primary btn-block" onclick="openPedidoSheet()" style="margin-bottom:16px">
+        <ion-icon name="add-outline"></ion-icon> Nuevo pedido
+      </button>
+      ${list.length === 0
+        ? `<div class="card"><div class="empty"><ion-icon name="clipboard-outline"></ion-icon>
+             <p>Aún no hay pedidos.</p></div></div>`
+        : `<div class="card">${list.map(p => {
+            const e = PED_ESTADO[p.status||'borrador'] || PED_ESTADO.borrador;
+            const n = (p.items||[]).length;
+            return `<div class="row row-link" onclick="verPedido('${p.id}')">
+              <div class="kpi-ico ico-p" style="margin:0"><ion-icon name="clipboard-outline"></ion-icon></div>
+              <div class="row-main">
+                <div class="row-t">${esc(p.title||'Sin título')}</div>
+                <div class="row-s">${fDate(p.date)} · ${n} ${n===1?'artículo':'artículos'}</div>
+              </div>
+              <span class="badge ${e.badge}">${e.label}</span>
+            </div>`;
+          }).join('')}</div>`}`;
+    window._peds = list;
+  } catch (err) { errView(err); }
+}
+
+function verPedido(id) {
+  const p = (window._peds||[]).find(x=>x.id===id);
+  if (!p) return;
+  const items = p.items||[];
+  const mio = p.createdBy === ME.employeeId;
+  openSheet(`
+    <h3>${esc(p.title||'')}</h3>
+    <p class="lead">${fDate(p.date)} · ${esc(p.createdByName||'')}</p>
+    <div class="card" style="margin-bottom:14px">
+      ${items.length ? items.map(i=>`<div class="row">
+        <div class="row-main"><div class="row-t">${esc(i.name)}</div>
+        ${i.note?`<div class="row-s">${esc(i.note)}</div>`:''}</div>
+        <div class="row-v">${esc(i.qty)||''} ${esc(i.unit)||''}</div></div>`).join('')
+        : '<div class="empty"><p>Sin artículos.</p></div>'}
+    </div>
+    ${mio ? `<button class="btn btn-primary btn-block" onclick="openPedidoSheet('${p.id}')">Editar</button>` : ''}
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cerrar</button>`);
+}
+
+function openPedidoSheet(id) {
+  const p = id ? (window._peds||[]).find(x=>x.id===id) : null;
+  openSheet(`
+    <h3>${p?'Editar pedido':'Nuevo pedido'}</h3>
+    <p class="lead">${storeName(ME.store)}</p>
+    <input type="hidden" id="pedId" value="${p?p.id:''}">
+    <div class="field"><label>Título</label>
+      <input type="text" id="pedTitle" value="${p?esc(p.title||''):''}" placeholder="ej. Pedido semanal"></div>
+    <div class="field"><label>Fecha</label>
+      <input type="date" id="pedDate" value="${p?(p.date||todayStr()):todayStr()}"></div>
+    <div class="field"><label>Estado</label>
+      <select id="pedEstado">
+        <option value="borrador" ${p&&p.status==='borrador'?'selected':''}>Borrador</option>
+        <option value="enviado"  ${p&&p.status==='enviado' ?'selected':''}>Enviado</option>
+        <option value="recibido" ${p&&p.status==='recibido'?'selected':''}>Recibido</option>
+      </select></div>
+    <div class="field">
+      <label style="display:flex;align-items:center;justify-content:space-between">Artículos
+        <button class="btn btn-sm btn-ghost" onclick="addItem()"><ion-icon name="add-outline"></ion-icon> Agregar</button></label>
+      <div id="items"></div>
+    </div>
+    <button class="btn btn-primary btn-block" id="pedBtn" onclick="guardarPedido()">Guardar</button>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cancelar</button>`);
+  const items = (p && p.items) || [];
+  items.forEach(addItem);
+  if (!items.length) addItem();
+}
+
+function addItem(it) {
+  const v = it || { name:'', qty:'', unit:'', note:'' };
+  document.getElementById('items').insertAdjacentHTML('beforeend',
+    `<div class="item-row">
+      <input type="text" class="i-n" value="${esc(v.name)}" placeholder="Artículo">
+      <input type="text" class="i-q" value="${esc(v.qty)}" placeholder="Cant.">
+      <button class="del" onclick="this.parentNode.remove()"><ion-icon name="close-outline"></ion-icon></button>
+    </div>`);
+}
+
+async function guardarPedido() {
+  const title = document.getElementById('pedTitle').value.trim();
+  if (!title) { toast('Ponle un título.', 'err'); return; }
+  const items = [...document.querySelectorAll('#items .item-row')].map(r => ({
+    name: r.querySelector('.i-n').value.trim(),
+    qty:  r.querySelector('.i-q').value.trim(), unit:'', note:''
+  })).filter(i => i.name);
+  if (!items.length) { toast('Agrega al menos un artículo.', 'err'); return; }
+
+  const b = document.getElementById('pedBtn');
+  b.disabled = true; b.textContent = 'Guardando...';
+  try {
+    await savePedido({
+      title, items,
+      date:   document.getElementById('pedDate').value,
+      status: document.getElementById('pedEstado').value
+    }, document.getElementById('pedId').value || null);
+    closeSheet();
+    toast('Pedido guardado', 'ok');
+    vPedidos();
+  } catch (err) {
+    b.disabled = false; b.textContent = 'Guardar';
+    toast('No se pudo guardar: ' + err.message, 'err');
+  }
+}
+
+// ══════════ Grupo ══════════
+let unsubChats = null, unsubMsgs = null, people = [], chatMeta = {}, activeChat = null;
+let msgsCache = [];   // para repintar cuando cambian los "vistos"
+let vistoFirma = '', listaFirma = '';   // para no repintar sin necesidad
+
+// Sólo se corta la escucha de la conversación abierta. La de la lista de
+// chats se queda viva todo el tiempo: es la que alimenta los avisos desde
+// cualquier pestaña.
+function stopChatListeners() {
+  if (unsubMsgs) { unsubMsgs(); unsubMsgs = null; }
+}
+
+function watchChats() {
+  if (unsubChats) return;
+  unsubChats = listenChats(list => {
+    chatMeta = {};
+    list.forEach(c => chatMeta[c.id] = c);
+    if (activeChat) {
+      marcarLeido(activeChat.id);
+      marcarVisto(activeChat.id, msOf((chatMeta[activeChat.id]||{}).lastAt));
+      // El "Visto" se actualiza en su sitio, sin repintar la conversación;
+      // la marca propia se ignora (sólo importan los vistos de los demás).
+      const firma = vistoFirmaDe(chatMeta[activeChat.id]);
+      if (firma !== vistoFirma) { vistoFirma = firma; refrescarEstado(); }
+    }
+    pintarAvisos();
+    // La lista sólo se rearma si cambió algo visible de ella
+    const fl = list.map(c => [c.id, msOf(c.lastAt), c.lastMessage, c.lastSender, c.title].join('|')).join('§');
+    if (TAB === 'grupo' && fl !== listaFirma) paintConvs();
+    listaFirma = fl;
+  });
+}
+
+let avisosAntes = 0;
+function pintarAvisos() {
+  const nuevos = sinLeer(Object.values(chatMeta));
+  const bell = document.getElementById('bell');
+  const dot  = document.getElementById('bellDot');
+  if (bell) {
+    bell.hidden = false;
+    bell.classList.toggle('on', nuevos.length > 0);
+    dot.hidden = nuevos.length === 0;
+    dot.textContent = nuevos.length > 9 ? '9+' : String(nuevos.length);
+  }
+  const tab = document.querySelector('.tab[data-t="grupo"]');
+  if (tab) tab.classList.toggle('nuevo', nuevos.length > 0);
+
+  if (nuevos.length > avisosAntes && TAB !== 'grupo') {
+    const c = nuevos[0];
+    const quien = String(c.id).startsWith('anuncios')
+      ? (c.title || 'Anuncios')
+      : (c.title || (c.names && c.names[c.lastSender]) || 'un compañero');
+    toast('Nuevo mensaje de ' + quien, 'info');
+  }
+  avisosAntes = nuevos.length;
+}
+
+async function vGrupo() {
+  el().innerHTML = '<div class="skel-card"></div>'.repeat(4);
+  try {
+    if (!people.length) {
+      const [emps, mgrs] = await Promise.all([
+        db.collection('Employees').get(),
+        db.collection('Main').get()
+      ]);
+      people = [];
+      mgrs.docs.forEach(d => { const m=d.data();
+        people.push({ pid:'mgr:'+d.id, name:m.name||m.email||'SFM', sub:'SFM', kind:'m' }); });
+      // Sólo los compañeros de MI tienda: las tiendas no se mezclan
+      emps.docs.forEach(d => { const e=d.data();
+        if (e.status==='active' && e.store===ME.store)
+          people.push({ pid:'emp:'+d.id, name:e.name, sub:storeShort(e.store), kind:'c' }); });
+      people = people.filter(p => p.pid !== ME.pid);
+    }
+    paintConvs();
+    watchChats();
+  } catch (err) { errView(err); }
+}
+
+function paintConvs() {
+  const a = chatMeta[anunciosId()] || {};
+  const pend = {}; sinLeer(Object.values(chatMeta)).forEach(c => pend[c.id] = true);
+  const punto = id => pend[id] ? '<span class="conv-dot"></span>' : '';
+  const mgrs = people.filter(p=>p.kind==='m'), cols = people.filter(p=>p.kind==='c');
+  const row = p => {
+    const m = chatMeta[dmId(ME.pid,p.pid)] || {};
+    return `<div class="conv" onclick="openDm('${p.pid}')">
+      ${avatar(p.name,44)}
+      <div class="conv-main">
+        <div class="conv-top"><span class="conv-n">${esc(p.name)}${punto(dmId(ME.pid,p.pid))}</span>
+          <span class="conv-t">${m.lastAt?relTime(m.lastAt):''}</span></div>
+        <div class="conv-s">${esc(m.lastMessage || p.sub)}</div>
+      </div></div>`;
+  };
+  const grupos = Object.values(chatMeta).filter(c => c.type === 'grupo')
+    .sort((x,y) => String(x.title||'').localeCompare(String(y.title||'')));
+  const filaGrupo = c => `
+    <div class="conv" onclick="openGrupo('${c.id}')">
+      <div class="conv-ava grupo"><ion-icon name="people-outline"></ion-icon></div>
+      <div class="conv-main">
+        <div class="conv-top"><span class="conv-n">${esc(c.title || 'Grupo')}${punto(c.id)}</span>
+          <span class="conv-t">${c.lastAt?relTime(c.lastAt):''}</span></div>
+        <div class="conv-s">${esc(c.lastMessage || ((c.participants||[]).length + ' miembros'))}</div>
+      </div></div>`;
+
+  el().innerHTML = `
+    <div class="conv" onclick="openAnuncios()">
+      <div class="conv-ava anuncios"><ion-icon name="megaphone-outline"></ion-icon></div>
+      <div class="conv-main">
+        <div class="conv-top"><span class="conv-n">Anuncios de ${storeShort(ME.store)}${punto(anunciosId())}</span>
+          <span class="conv-t">${a.lastAt?relTime(a.lastAt):''}</span></div>
+        <div class="conv-s">${esc(a.lastMessage || 'Novedades para todo el equipo')}</div>
+      </div></div>
+    <div class="conv" onclick="openTienda()">
+      <div class="conv-ava tienda"><ion-icon name="storefront-outline"></ion-icon></div>
+      <div class="conv-main">
+        <div class="conv-top"><span class="conv-n">Chat de ${storeShort(ME.store)}${punto('tienda_'+ME.store)}</span>
+          <span class="conv-t">${chatMeta['tienda_'+ME.store]?.lastAt?relTime(chatMeta['tienda_'+ME.store].lastAt):''}</span></div>
+        <div class="conv-s">${esc(chatMeta['tienda_'+ME.store]?.lastMessage || 'Toda tu tienda, sin mezclar')}</div>
+      </div></div>
+    ${grupos.length?`<div class="conv-label">Mis grupos</div>${grupos.map(filaGrupo).join('')}`:''}
+    ${mgrs.length?`<div class="conv-label">SFM</div>${mgrs.map(row).join('')}`:''}
+    ${cols.length?`<div class="conv-label">Compañeros</div>${cols.map(row).join('')}`:''}`;
+}
+
+async function openAnuncios() {
+  try {
+    const ref = db.collection('Chats').doc(anunciosId());
+    const doc = await ref.get();
+    if (!doc.exists) await ref.set({
+      type:'anuncios', store: ME.store, title: 'Anuncios de ' + storeShort(ME.store) });
+    activeChat = { id:anunciosId(), type:'anuncios',
+                   title:'Anuncios de ' + storeShort(ME.store),
+                   sub:'Tu tienda · sólo lectura' };
+    mountThread();
+  } catch (err) { toast('No se pudo abrir: ' + err.message, 'err'); }
+}
+
+async function openDm(pid) {
+  const p = people.find(x=>x.pid===pid);
+  if (!p) return;
+  try {
+    const names = {}; names[ME.pid]=ME.name; names[p.pid]=p.name;
+    const id = await ensureDm(p.pid, names);
+    activeChat = { id, type:'dm', title:p.name, sub:p.sub+' · Conversación privada' };
+    mountThread();
+  } catch (err) {
+    // Antes el fallo era silencioso: se tocaba y "no pasaba nada"
+    console.error('openDm', err);
+    toast('No se pudo abrir la conversación: ' + err.message, 'err');
+  }
+}
+
+async function openTienda() {
+  await ensureTienda();
+  activeChat = { id:'tienda_'+ME.store, type:'tienda',
+                 title:'Chat de ' + storeShort(ME.store), sub:'Toda la tienda' };
+  mountThread();
+}
+
+function openGrupo(id) {
+  const c = chatMeta[id];
+  if (!c) return;
+  activeChat = { id, type:'grupo', title: c.title || 'Grupo',
+                 sub: (c.participants||[]).length + ' miembros' };
+  mountThread();
+}
+
+function mountThread() {
+  marcarLeido(activeChat.id);
+  marcarVisto(activeChat.id, msOf((chatMeta[activeChat.id]||{}).lastAt));
+  pintarAvisos();
+  document.getElementById('threadN').textContent = activeChat.title;
+  document.getElementById('threadS').textContent = activeChat.sub;
+  document.getElementById('threadAva').innerHTML = activeChat.type==='anuncios'
+    ? '<div class="conv-ava anuncios" style="width:38px;height:38px;font-size:14px"><ion-icon name="megaphone-outline"></ion-icon></div>'
+    : activeChat.type==='grupo'
+    ? '<div class="conv-ava grupo" style="width:38px;height:38px;font-size:14px"><ion-icon name="people-outline"></ion-icon></div>'
+    : activeChat.type==='tienda'
+    ? '<div class="conv-ava tienda" style="width:38px;height:38px;font-size:14px"><ion-icon name="storefront-outline"></ion-icon></div>'
+    : avatar(activeChat.title, 38);
+
+  document.getElementById('composeWrap').innerHTML = activeChat.type==='anuncios'
+    ? `<div class="locked"><ion-icon name="megaphone-outline"></ion-icon> Sólo el SFM publica anuncios.</div>`
+    : `<div class="compose">
+         <input type="file" id="fotoIn" accept="image/*" hidden onchange="doFoto(this)">
+         <button class="adj" id="fotoBtn" aria-label="Enviar foto"
+                 onclick="document.getElementById('fotoIn').click()"><ion-icon name="image-outline"></ion-icon></button>
+         <textarea id="msgIn" rows="1" placeholder="Escribe un mensaje..." oninput="autoCrecer(this)"></textarea>
+         <button class="send" onclick="enviarMsg()"><ion-icon name="send-outline"></ion-icon></button>
+       </div>`;
+
+  document.getElementById('msgs').innerHTML =
+    '<div class="empty"><ion-icon name="sync-outline" class="gira"></ion-icon></div>';
+  document.getElementById('thread').classList.add('on');
+
+  if (unsubMsgs) unsubMsgs();
+  msgsCache = [];
+  vistoFirma = '';
+  unsubMsgs = listenMessages(activeChat.id, m => { msgsCache = m; paintMsgs(m); });
+}
+
+function closeThread() {
+  document.getElementById('thread').classList.remove('on');
+  if (unsubMsgs) { unsubMsgs(); unsubMsgs = null; }
+  activeChat = null;
+}
+
+let chatPintado = null;   // la animación de entrada sólo la primera vez
+
+function paintMsgs(list) {
+  const box = document.getElementById('msgs');
+  box.classList.toggle('sin-anim', chatPintado === activeChat.id);
+  chatPintado = activeChat.id;
+  if (!list.length) {
+    box.innerHTML = `<div class="empty"><ion-icon name="chatbubble-ellipses-outline"></ion-icon>
+      <p>${activeChat.type==='anuncios'?'Todavía no hay anuncios.':'Escribe el primer mensaje.'}</p></div>`;
+    return;
+  }
+  // No te arrastra al final si estás leyendo hacia arriba.
+  const alFinal = box.scrollHeight - box.scrollTop - box.clientHeight < 90;
+
+  let html = '', dia = '', prev = null;
+  list.forEach((m, i) => {
+    const d = m.createdAt?.toDate?.() || new Date();
+    const k = toDateStr(d);
+    let diaNuevo = false;
+    if (k !== dia) { dia = k; diaNuevo = true;
+      html += `<div class="day"><span>${k===todayStr()?'Hoy':fDate(k)}</span></div>`; }
+    // Mensajes seguidos de la misma persona se agrupan
+    const seguido = !diaNuevo && prev && prev.senderId === m.senderId
+      && (d - (prev.createdAt?.toDate?.() || d)) < 5*60*1000;
+    const sig = list[i+1];
+    const ultimo = !sig || sig.senderId !== m.senderId;
+    prev = m;
+    const mio = m.senderId === ME.pid;
+    const esUltimoMio = mio && i === list.length - 1;
+    if (activeChat.type === 'anuncios') {
+      html += `<div class="anuncio">
+        <div class="anuncio-h">${avatar(m.senderName,22)}<b>${esc(m.senderName)}</b>
+          <time>${fTime(d)}</time></div>
+        <div class="anuncio-b">${m.type === 'image'
+          ? `<img class="anuncio-foto" src="${m.url}" alt="Foto" loading="lazy" onclick="verFoto('${m.url}')">`
+          : esc(m.text).replace(/\n/g,'<br>')}</div>
+        <div class="anuncio-rx">${rxPills(m)}${rxUi(m)}</div></div>`;
+    } else {
+      const burbuja = `<div class="bub ${m.type==='image'?'bub-foto':''}">
+        ${m.type === 'image'
+          ? `<img src="${m.url}" alt="Foto" loading="lazy"
+                  style="aspect-ratio:${(m.w||4)}/${(m.h||3)}" onclick="verFoto('${m.url}')">`
+          : `<div class="txt">${esc(m.text).replace(/\n/g,'<br>')}</div>`}
+        <div class="at">${fTime(d)}</div></div>`;
+      html += `<div class="bub-row ${mio?'me':''} ${seguido?'seguido':''} ${ultimo?'ultimo':''}">
+        ${mio || seguido ? '' : `<div class="bub-quien">${esc(m.senderName||'')}</div>`}
+        <div class="bub-linea">
+          <div class="bub-col">${burbuja}${rxPills(m)}${esUltimoMio ? estadoDe(m) : ''}</div>
+          ${rxUi(m)}
+        </div></div>`;
+    }
+  });
+  box.innerHTML = html;
+  estadoFirma = '';
+  if (alFinal) box.scrollTop = box.scrollHeight;
+}
+
+// Nombre que mostrar para un pid (nombres de la conversación o de la lista)
+function nombreDePid(pid) {
+  const p = people.find(x => x.pid === pid);
+  if (p) return p.name;
+  const meta = (activeChat && chatMeta[activeChat.id]) || {};
+  return (meta.names && meta.names[pid]) || '·';
+}
+
+// ── Reacciones: barra 👍 ❤️ 👎 ──
+function rxToggle(e, btn) {
+  e.stopPropagation();
+  const w = btn.parentElement;
+  const abierto = w.classList.contains('rx-open');
+  cerrarRx();
+  if (!abierto) w.classList.add('rx-open');
+}
+function cerrarRx() {
+  document.querySelectorAll('.rx-open').forEach(x => x.classList.remove('rx-open'));
+}
+document.addEventListener('click', cerrarRx);
+
+function reacTap(e, msgId, tipo) {
+  e.stopPropagation();
+  cerrarRx();
+  const m = msgsCache.find(x => x.id === msgId);
+  const actual = m && m.reacciones ? m.reacciones[ME.pid] : null;
+  reaccionar(msgId, tipo, actual)
+    .catch(err => toast('No se pudo reaccionar: ' + err.message, 'err'));
+}
+
+function rxUi(m) {
+  const rx = m.reacciones || {};
+  return `<div class="rx-wrap">
+    <button type="button" class="rx-tap" onclick="rxToggle(event,this)" aria-label="Reaccionar">
+      <ion-icon name="happy-outline"></ion-icon></button>
+    <div class="rx-bar">
+      ${['up','love','down'].map(t =>
+        `<button type="button" class="${rx[ME.pid]===t?'mia':''}"
+                 onclick="reacTap(event,'${m.id}','${t}')">${REACCION[t]}</button>`).join('')}
+    </div></div>`;
+}
+
+function rxPills(m) {
+  const rx = m.reacciones || {};
+  const conteo = { up:[], love:[], down:[] };
+  Object.keys(rx).forEach(p => { if (conteo[rx[p]]) conteo[rx[p]].push(p); });
+  const pills = ['up','love','down'].filter(t => conteo[t].length).map(t =>
+    `<button type="button" class="rx-pill ${rx[ME.pid]===t?'mia':''}"
+             onclick="reacTap(event,'${m.id}','${t}')">${REACCION[t]}<span>${conteo[t].length}</span></button>`).join('');
+  return pills ? `<div class="rx-pills">${pills}</div>` : '';
+}
+
+// Estado bajo mi último mensaje: Enviando… → Enviado → Visto
+function estadoDe(m) {
+  const meta   = (activeChat && chatMeta[activeChat.id]) || {};
+  const vistos = meta.vistos || {};
+  const tMs = m.createdAt?.toMillis?.() || 0;
+  if (!tMs) return `<div class="msg-estado"><ion-icon name="time-outline"></ion-icon> Enviando…</div>`;
+  if (activeChat.type === 'grupo' || activeChat.type === 'tienda') {
+    const quienes = Object.keys(vistos)
+      .filter(p => p !== ME.pid && msOf(vistos[p]) >= tMs);
+    return quienes.length
+      ? `<div class="msg-estado visto">${quienes.slice(0,5).map(p => avatar(nombreDePid(p), 16)).join('')} Visto por ${quienes.length}</div>`
+      : `<div class="msg-estado"><ion-icon name="checkmark-done-outline"></ion-icon> Enviado</div>`;
+  }
+  const otroPid = (meta.participants || []).find(p => p !== ME.pid) || '';
+  return msOf(vistos[otroPid]) >= tMs
+    ? `<div class="msg-estado visto">${avatar(nombreDePid(otroPid), 16)} Visto</div>`
+    : `<div class="msg-estado"><ion-icon name="checkmark-done-outline"></ion-icon> Enviado</div>`;
+}
+
+async function doFoto(input) {
+  const file = input.files && input.files[0];
+  input.value = '';
+  if (!file || !activeChat) return;
+  const btn = document.getElementById('fotoBtn');
+  btn.disabled = true;
+  btn.classList.add('subiendo');
+  btn.innerHTML = '<ion-icon name="sync-outline" class="gira"></ion-icon>';
+  try {
+    await enviarFoto(activeChat.id, file, pct => {
+      if (pct === null) return;          // todavía encogiendo
+      const p = btn.querySelector('.pct');
+      if (p) p.textContent = pct + '%';
+      else   btn.innerHTML = `<span class="pct">${pct}%</span>`;
+    });
+  } catch (err) {
+    console.error('enviar foto', err);
+    toast('No se pudo enviar la foto: ' + err.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('subiendo');
+    btn.innerHTML = '<ion-icon name="image-outline"></ion-icon>';
+  }
+}
+
+function verFoto(url) {
+  let v = document.getElementById('visorFoto');
+  if (!v) {
+    v = document.createElement('div');
+    v.id = 'visorFoto'; v.className = 'visor-foto';
+    v.onclick = () => v.classList.remove('on');
+    v.innerHTML = '<img alt="Foto">';
+    document.body.appendChild(v);
+  }
+  v.querySelector('img').src = url;
+  v.classList.add('on');
+}
+
+// El cuadro crece con el mensaje en vez de quedarse en una línea
+function autoCrecer(t) {
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 120) + 'px';
+}
+
+async function enviarMsg() {
+  const i = document.getElementById('msgIn');
+  const t = i.value.trim();
+  if (!t || !activeChat) return;
+  i.value = '';
+  try { await sendMessage(activeChat.id, t); }
+  catch (err) { i.value = t; toast('No se pudo enviar: '+err.message, 'err'); }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && document.activeElement?.id === 'msgIn') {
+    e.preventDefault(); enviarMsg();
+  }
+});
+
+// ══════════ Perfil ══════════
+function showPerfil() {
+  openSheet(`
+    <div style="text-align:center;margin-bottom:20px">
+      ${avatar(ME.name,64)}
+      <div style="font-size:19px;font-weight:700;margin-top:12px">${esc(ME.name)}</div>
+      <div style="font-size:13.5px;color:var(--muted)">${esc(ME.jobTitle)} · ${storeName(ME.store)}</div>
+    </div>
+    <div class="card" style="margin-bottom:14px">
+      <div class="row"><div class="row-main"><div class="row-t">Correo</div></div>
+        <div class="row-s">${esc(ME.email||'—')}</div></div>
+      <div class="row"><div class="row-main"><div class="row-t">Tarifa por hora</div></div>
+        <div class="row-v">${money(ME.rate)}</div></div>
+      <div class="row"><div class="row-main"><div class="row-t">Fecha de ingreso</div></div>
+        <div class="row-s">${fDate(ME.hireDate)}</div></div>
+    </div>
+    <button class="btn btn-ghost btn-block" onclick="cambiarPass()" style="margin-bottom:9px">
+      <ion-icon name="key-outline"></ion-icon> Cambiar contraseña</button>
+    <button class="btn btn-block" style="background:var(--red-soft);color:#9f1239" onclick="logout()">
+      <ion-icon name="log-out-outline"></ion-icon> Cerrar sesión</button>`);
+}
+
+function cambiarPass() {
+  openSheet(`
+    <h3>Cambiar contraseña</h3>
+    <p class="lead">Mínimo 8 caracteres.</p>
+    <div class="field"><label>Contraseña actual</label>
+      <input type="password" id="pOld" autocomplete="current-password"></div>
+    <div class="field"><label>Nueva contraseña</label>
+      <input type="password" id="pNew" autocomplete="new-password"></div>
+    <div class="field"><label>Repite la nueva</label>
+      <input type="password" id="pNew2" autocomplete="new-password"></div>
+    <button class="btn btn-primary btn-block" id="pBtn" onclick="guardarPass()">Guardar</button>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cancelar</button>`);
+}
+
+async function guardarPass() {
+  const o = document.getElementById('pOld').value;
+  const n = document.getElementById('pNew').value;
+  const n2= document.getElementById('pNew2').value;
+  if (n.length < 8)  { toast('La nueva debe tener al menos 8 caracteres.', 'err'); return; }
+  if (n !== n2)      { toast('Las contraseñas no coinciden.', 'err'); return; }
+  const b = document.getElementById('pBtn');
+  b.disabled = true; b.textContent = 'Guardando...';
+  try {
+    const user = auth.currentUser;
+    // Firebase exige reautenticar antes de cambiar la contraseña.
+    await user.reauthenticateWithCredential(
+      firebase.auth.EmailAuthProvider.credential(user.email, o));
+    await user.updatePassword(n);
+    closeSheet();
+    toast('Contraseña actualizada', 'ok');
+  } catch (err) {
+    b.disabled = false; b.textContent = 'Guardar';
+    toast(err.code === 'auth/wrong-password'
+      ? 'La contraseña actual no es correcta.' : err.message, 'err');
+  }
+}
+// Firma de los vistos AJENOS (la marca propia cambia sola y no se muestra)
+function vistoFirmaDe(meta) {
+  const v = (meta && meta.vistos) || {};
+  return Object.keys(v).filter(p => p !== ME.pid).sort()
+    .map(p => p + ':' + msOf(v[p])).join('|');
+}
+
+// Cambia únicamente la línea de estado bajo mi último mensaje.
+let estadoFirma = '';
+function refrescarEstado() {
+  if (!activeChat || !msgsCache.length) return;
+  const m = msgsCache[msgsCache.length - 1];
+  if (m.senderId !== ME.pid) return;
+  const html = estadoDe(m);
+  if (html === estadoFirma) return;
+  const nodo = document.querySelector('#msgs .msg-estado');
+  if (!nodo) { paintMsgs(msgsCache); estadoFirma = html; return; }
+  estadoFirma = html;
+  nodo.outerHTML = html;
+}
+</script>
+</body>
+</html>
