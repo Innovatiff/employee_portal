@@ -334,6 +334,11 @@ async function miHorario(lunes) {
   return (doc.data().shifts || {})[ME.employeeId] || {};
 }
 
+/* Cuando la gerencia marca un día de descanso lo guarda como { libre:true },
+   sin hora de entrada ni de salida. Hay que preguntarlo ANTES de leer t.in:
+   el objeto existe y es "truthy", pero no trae horario. */
+function esLibre(t) { return !!(t && t.libre); }
+
 // ── Chat ──
 // Los anuncios son por tienda: cada quien ve los de la suya.
 const anunciosId = () => 'anuncios_' + ME.store;
