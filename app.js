@@ -329,9 +329,28 @@ function diasDeSemana(lunes) {
   });
 }
 async function miHorario(lunes) {
-  const doc = await db.collection('Horarios').doc(`${lunes}_${ME.store}`).get();
-  if (!doc.exists) return {};
-  return (doc.data().shifts || {})[ME.employeeId] || {};
+  // La semana armada y mi horario fijo (si la gerencia me puso uno) se
+  // piden juntos. Si la gerencia aún no abrió esa semana, el fijo se
+  // muestra tal cual: así veo mis semanas futuras aunque nadie las haya
+  // tocado. En cuanto la semana se llena de verdad, manda la semana.
+  const [doc, fj] = await Promise.all([
+    db.collection('Horarios').doc(`${lunes}_${ME.store}`).get(),
+    db.collection('Horarios').doc('fijo_' + ME.employeeId).get()
+  ]);
+  const data = doc.exists ? doc.data() : {};
+  const mios = (data.shifts || {})[ME.employeeId] || {};
+  const aplicado = (data.fijados || []).indexOf(ME.employeeId) >= 0;
+  if (aplicado || Object.keys(mios).length || !fj.exists) return mios;
+
+  // Semana sin llenar: proyectar el fijo sobre las fechas (0 = lunes)
+  const turnos = fj.data().turnos || {};
+  const out = {};
+  const d = parseD(lunes);
+  for (let i = 0; i < 7; i++) {
+    if (turnos[i]) out[toDateStr(d)] = { in: turnos[i].in, out: turnos[i].out };
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
 }
 
 /* Cuando el SFM marca un día de descanso lo guarda como { libre:true },
