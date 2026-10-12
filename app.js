@@ -211,7 +211,8 @@ async function myTimeOff() {
 
 async function requestTimeOff(data) {
   await db.collection('TimeOff').add({
-    ...data, employeeId: ME.employeeId, status:'pending',
+    ...data, employeeId: ME.employeeId, employeeName: ME.name,
+    store: ME.store, status:'pending',
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 }
