@@ -79,13 +79,34 @@ const esc = s => String(s==null?'':s)
   .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
   .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 
-// ── Períodos quincenales, anclados al 1 de enero de 2024 ──
+// ── Períodos de pago (idénticos a los del escritorio) ──
+// Desde el 16 oct 2026: del 1 al 15 y del 16 a fin de mes (se paga el 15 y
+// el 30). Antes, cada 14 días desde el 1 ene 2024, con un puente del 5 al
+// 15 de octubre de 2026.
 const ORIGIN = new Date('2024-01-01T00:00:00');
+const QUINCENA_DESDE = new Date('2026-10-16T00:00:00');
+const PUENTE_DESDE   = new Date('2026-10-05T00:00:00');
+const idxQuincena = d => d.getFullYear()*24 + d.getMonth()*2 + (d.getDate() > 15 ? 1 : 0);
+const idx14 = d => Math.floor(Math.round((d - ORIGIN)/86400000)/14);
+const IDX_CORTE = idxQuincena(QUINCENA_DESDE);
+const IDX14_PUENTE = idx14(PUENTE_DESDE);
 const perIndex = d => { const x=new Date(d); x.setHours(0,0,0,0);
-  return Math.floor(Math.floor((x-ORIGIN)/86400000)/14); };
+  if (x >= QUINCENA_DESDE) return idxQuincena(x);
+  if (x >= PUENTE_DESDE) return IDX_CORTE - 1;
+  return IDX_CORTE - 1 - (IDX14_PUENTE - idx14(x)); };
 function perByIndex(i) {
-  const s = new Date(ORIGIN); s.setDate(s.getDate()+i*14);
-  const e = new Date(s); e.setDate(e.getDate()+13);
+  if (i >= IDX_CORTE) {
+    const y=Math.floor(i/24), m=Math.floor((i%24)/2), segunda = i%2===1;
+    const s=new Date(y, m, segunda ? 16 : 1);
+    const e=segunda ? new Date(y, m+1, 0) : new Date(y, m, 15);
+    return { index:i, start:toDateStr(s), end:toDateStr(e) };
+  }
+  if (i === IDX_CORTE - 1) {
+    const e=new Date(QUINCENA_DESDE); e.setDate(e.getDate()-1);
+    return { index:i, start:toDateStr(PUENTE_DESDE), end:toDateStr(e) };
+  }
+  const s=new Date(ORIGIN); s.setDate(s.getDate() + (IDX14_PUENTE - (IDX_CORTE - 1 - i))*14);
+  const e=new Date(s); e.setDate(e.getDate()+13);
   return { index:i, start:toDateStr(s), end:toDateStr(e) };
 }
 const curPeriod = () => perByIndex(perIndex(new Date()));
