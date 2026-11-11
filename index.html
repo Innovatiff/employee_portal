@@ -348,13 +348,12 @@ async function vInicio() {
             <div class="row-s" id="inicioViajeSub">Kilometraje de tus viajes</div></div>
           <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
         </div>` : ''}
-        ${ME.canPedidos ? `
         <div class="row row-link" onclick="go('pedidos')">
           <div class="kpi-ico ico-p" style="margin:0"><ion-icon name="clipboard-outline"></ion-icon></div>
           <div class="row-main"><div class="row-t">Pedidos</div>
-            <div class="row-s">Listas de ${storeShort(ME.store)}</div></div>
+            <div class="row-s">${ME.canPedidos ? 'Listas de ' + storeShort(ME.store) + ' y entre compañeros' : 'Pedidos entre compañeros'}</div></div>
           <ion-icon name="chevron-forward-outline" class="chev"></ion-icon>
-        </div>` : ''}
+        </div>
         <div class="row row-link" onclick="go('reportes')">
           <div class="kpi-ico" style="margin:0;background:var(--red-soft);color:#be123c"><ion-icon name="warning-outline"></ion-icon></div>
           <div class="row-main"><div class="row-t">Reportar incidente</div>
@@ -1084,24 +1083,25 @@ async function enviarPermiso() {
 }
 
 // ══════════ Pedidos ══════════
+let pedTab = 'recibidos';
 async function vPedidos() {
-  if (!ME.canPedidos) {
-    el().innerHTML = `<div class="card"><div class="empty"><ion-icon name="lock-closed-outline"></ion-icon>
-      <p>No estás asignado para gestionar pedidos.<br>
-      <span style="font-size:12.5px">Pídeselo a tu SFM.</span></p></div></div>`;
-    return;
-  }
   loading(3);
   try {
-    const list = await storePedidos();
-    el().innerHTML = `
-      <button class="btn btn-primary btn-block" onclick="openPedidoSheet()" style="margin-bottom:16px">
-        <ion-icon name="add-outline"></ion-icon> Nuevo pedido
-      </button>
-      ${list.length === 0
+    const [pp, tienda] = await Promise.all([
+      pedidosPersona(),
+      ME.canPedidos ? storePedidos() : Promise.resolve([])
+    ]);
+    window._pp = pp;
+    window._peds = tienda;
+    const pend = pp.recibidos.filter(p => p.status === 'enviado').length;
+    if (pedTab === 'tienda' && !ME.canPedidos) pedTab = 'recibidos';
+    const tab = (k, t) => `<button class="ped-tab ${pedTab===k?'on':''}" onclick="pedTab='${k}';vPedidos()">${t}</button>`;
+    let cuerpo;
+    if (pedTab === 'tienda') {
+      cuerpo = tienda.length === 0
         ? `<div class="card"><div class="empty"><ion-icon name="clipboard-outline"></ion-icon>
-             <p>Aún no hay pedidos.</p></div></div>`
-        : `<div class="card">${list.map(p => {
+             <p>Aún no hay pedidos de la tienda.</p></div></div>`
+        : `<div class="card">${tienda.map(p => {
             const e = PED_ESTADO[p.status||'borrador'] || PED_ESTADO.borrador;
             const n = (p.items||[]).length;
             return `<div class="row row-link" onclick="verPedido('${p.id}')">
@@ -1112,9 +1112,129 @@ async function vPedidos() {
               </div>
               <span class="badge ${e.badge}">${e.label}</span>
             </div>`;
-          }).join('')}</div>`}`;
-    window._peds = list;
+          }).join('')}</div>`;
+    } else {
+      const lista = pp[pedTab];
+      const rec = pedTab === 'recibidos';
+      cuerpo = lista.length === 0
+        ? `<div class="card"><div class="empty"><ion-icon name="${rec?'download-outline':'paper-plane-outline'}"></ion-icon>
+             <p>${rec ? 'Nadie te ha hecho pedidos todavía.' : 'Aún no has enviado pedidos.'}</p></div></div>`
+        : `<div class="card">${lista.map(p => {
+            const n = (p.items||[]).length;
+            const ok = p.status === 'aceptado';
+            return `<div class="row row-link" onclick="verPedidoPersona('${p.id}')">
+              <div class="kpi-ico ico-p" style="margin:0"><ion-icon name="${rec?'download-outline':'paper-plane-outline'}"></ion-icon></div>
+              <div class="row-main">
+                <div class="row-t">${esc(p.title||'Sin título')}</div>
+                <div class="row-s">${rec ? 'De ' + esc(p.createdByName||'—') : 'Para ' + esc(p.paraName||'—')} · ${fDate(p.date)} · ${n} ${n===1?'artículo':'artículos'}</div>
+              </div>
+              <span class="badge ${ok?'b-green':'b-amber'}">${ok ? 'Aceptado' : (rec ? 'Por aceptar' : 'Enviado')}</span>
+            </div>`;
+          }).join('')}</div>`;
+    }
+    el().innerHTML = `
+      <button class="btn btn-primary btn-block" onclick="${pedTab==='tienda' ? 'openPedidoSheet()' : 'nuevoPedidoPersona()'}" style="margin-bottom:14px">
+        <ion-icon name="add-outline"></ion-icon> ${pedTab==='tienda' ? 'Nuevo pedido de la tienda' : 'Hacer un pedido a un compañero'}
+      </button>
+      <div class="ped-tabs">
+        ${tab('recibidos', 'Recibidos' + (pend ? ` <span class="ped-num">${pend}</span>` : ''))}
+        ${tab('enviados', 'Enviados')}
+        ${ME.canPedidos ? tab('tienda', 'Tienda') : ''}
+      </div>
+      ${cuerpo}`;
   } catch (err) { errView(err); }
+}
+
+function verPedidoPersona(id) {
+  const pp = window._pp || { recibidos:[], enviados:[] };
+  const p = pp.recibidos.concat(pp.enviados).find(x => x.id === id);
+  if (!p) return;
+  const items = p.items || [];
+  const paraMi = p.para === ME.employeeId;
+  const ok = p.status === 'aceptado';
+  const cuando = p.aceptadoAt && p.aceptadoAt.toDate ? ' · ' + fTime(p.aceptadoAt) : '';
+  openSheet(`
+    <h3>${esc(p.title||'')}</h3>
+    <p class="lead">De <b>${esc(p.createdByName||'—')}</b> para <b>${esc(p.paraName||'—')}</b> · ${fDate(p.date)}</p>
+    <div class="card" style="margin-bottom:14px">
+      ${items.length ? items.map(i=>`<div class="row">
+        <div class="row-main"><div class="row-t">${esc(i.name)}</div></div>
+        <div class="row-v">${esc(i.qty)||''}</div></div>`).join('')
+        : '<div class="empty"><p>Sin artículos.</p></div>'}
+    </div>
+    ${ok ? `<div class="ped-ok"><ion-icon name="checkmark-circle"></ion-icon> Aceptado por ${esc(p.paraName||'')}${cuando}</div>`
+         : paraMi ? `<button class="btn btn-primary btn-block" id="aceptarBtn" onclick="aceptarPedido('${p.id}')">
+                       <ion-icon name="checkmark-outline"></ion-icon> Aceptar — recibí tu pedido</button>`
+                  : `<div class="ped-esp"><ion-icon name="time-outline"></ion-icon> Esperando que ${esc(p.paraName||'')} lo acepte</div>`}
+    <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:10px">Los pedidos enviados no se pueden editar ni borrar.</p>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:6px">Cerrar</button>`);
+}
+
+async function aceptarPedido(id) {
+  const b = document.getElementById('aceptarBtn');
+  if (b) { b.disabled = true; b.textContent = 'Aceptando...'; }
+  try {
+    await aceptarPedidoPersona(id);
+    closeSheet();
+    toast('Pedido aceptado', 'ok');
+    vPedidos();
+  } catch (err) {
+    if (b) { b.disabled = false; b.textContent = 'Aceptar — recibí tu pedido'; }
+    toast('No se pudo aceptar: ' + err.message, 'err');
+  }
+}
+
+async function nuevoPedidoPersona() {
+  let comp = [];
+  try {
+    const snap = await db.collection('Employees').get();
+    comp = snap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .filter(e => e.status === 'active' && e.store === ME.store && e.id !== ME.employeeId)
+      .sort((a,b) => String(a.name||'').localeCompare(String(b.name||'')));
+  } catch (err) { toast('No se pudo cargar el equipo: ' + err.message, 'err'); return; }
+  if (!comp.length) { toast('No hay compañeros en tu tienda.', 'err'); return; }
+  openSheet(`
+    <h3>Pedido a un compañero</h3>
+    <p class="lead">${storeName(ME.store)}</p>
+    <div class="field"><label>Para</label>
+      <select id="ppPara">${comp.map(e => `<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select></div>
+    <div class="field"><label>Título</label>
+      <input type="text" id="pedTitle" placeholder="ej. Lo que necesito para hoy"></div>
+    <div class="field">
+      <label style="display:flex;align-items:center;justify-content:space-between">Artículos
+        <button class="btn btn-sm btn-ghost" onclick="addItem()"><ion-icon name="add-outline"></ion-icon> Agregar</button></label>
+      <div id="items"></div>
+    </div>
+    <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">⚠️ Revisa bien: una vez enviado no se puede editar ni borrar.</p>
+    <button class="btn btn-primary btn-block" id="pedBtn" onclick="enviarPedidoAComp()">
+      <ion-icon name="paper-plane-outline"></ion-icon> Enviar pedido</button>
+    <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cancelar</button>`);
+  addItem();
+}
+
+async function enviarPedidoAComp() {
+  const sel = document.getElementById('ppPara');
+  const para = sel.value, paraName = sel.options[sel.selectedIndex].text;
+  const title = document.getElementById('pedTitle').value.trim();
+  if (!title) { toast('Ponle un título.', 'err'); return; }
+  const items = [...document.querySelectorAll('#items .item-row')].map(r => ({
+    name: r.querySelector('.i-n').value.trim(),
+    qty:  r.querySelector('.i-q').value.trim(), unit:'', note:''
+  })).filter(i => i.name);
+  if (!items.length) { toast('Agrega al menos un artículo.', 'err'); return; }
+  if (!confirm(`¿Enviar el pedido a ${paraName}? Después no se puede editar ni borrar.`)) return;
+  const b = document.getElementById('pedBtn');
+  b.disabled = true; b.textContent = 'Enviando...';
+  try {
+    await enviarPedidoPersona(para, paraName, title, items);
+    closeSheet();
+    toast('Pedido enviado a ' + paraName, 'ok');
+    pedTab = 'enviados';
+    vPedidos();
+  } catch (err) {
+    b.disabled = false; b.textContent = 'Enviar pedido';
+    toast('No se pudo enviar: ' + err.message, 'err');
+  }
 }
 
 function verPedido(id) {

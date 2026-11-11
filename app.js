@@ -240,7 +240,7 @@ async function requestTimeOff(data) {
 
 async function storePedidos() {
   const snap = await db.collection('Pedidos').where('store','==',ME.store).get();
-  return snap.docs.map(d=>({id:d.id,...d.data()}))
+  return snap.docs.map(d=>({id:d.id,...d.data()})).filter(p => p.tipo !== 'persona')
     .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
 }
 
@@ -259,10 +259,46 @@ async function savePedido(data, id) {
   return ref.id;
 }
 
+// ── Pedidos entre compañeros ──
+// Un colaborador le hace un pedido a otro de su tienda. Una vez enviado no
+// se edita ni se borra; el que lo recibe sólo puede darle "Aceptar".
+async function pedidosPersona() {
+  const col = db.collection('Pedidos');
+  const [rec, env] = await Promise.all([
+    col.where('para','==',ME.employeeId).get(),
+    col.where('createdBy','==',ME.employeeId).get()
+  ]);
+  const orden = (a,b) => String(b.date||'').localeCompare(String(a.date||''))
+    || ((b.createdAt && b.createdAt.seconds) || 0) - ((a.createdAt && a.createdAt.seconds) || 0);
+  const map = d => ({ id:d.id, ...d.data() });
+  return {
+    recibidos: rec.docs.map(map).filter(p => p.tipo === 'persona').sort(orden),
+    enviados:  env.docs.map(map).filter(p => p.tipo === 'persona').sort(orden)
+  };
+}
+
+async function enviarPedidoPersona(para, paraName, title, items) {
+  await db.collection('Pedidos').add({
+    tipo: 'persona', title, items,
+    para, paraName, store: ME.store,
+    createdBy: ME.employeeId, createdByName: ME.name,
+    date: todayStr(), status: 'enviado',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+async function aceptarPedidoPersona(id) {
+  await db.collection('Pedidos').doc(id).update({
+    status: 'aceptado',
+    aceptadoAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
 const PED_ESTADO = {
   borrador: { label:'Borrador', badge:'b-gray' },
   enviado:  { label:'Enviado',  badge:'b-amber' },
-  recibido: { label:'Recibido', badge:'b-green' }
+  recibido: { label:'Recibido', badge:'b-green' },
+  aceptado: { label:'Aceptado', badge:'b-green' }
 };
 
 // ── Registros de viaje (kilometraje de las salidas) ──
