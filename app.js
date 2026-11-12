@@ -322,8 +322,24 @@ async function misViajes(limite) {
     .slice(0, limite || 20);
 }
 
+/** Nombre con que se guarda un carro de la lista: "Toyota Corolla · Blanco · ABC-123". */
+function etiquetaCarro(c) {
+  return [c.nombre, c.color, c.placa].map(x => String(x || '').trim()).filter(Boolean).join(' · ');
+}
+
+/** Los carros que la gerencia dio de alta para mi tienda (Config/carros). */
+async function carrosOficiales() {
+  try {
+    const doc = await db.collection('Config').doc('carros').get();
+    const lista = doc.exists ? (doc.data().lista || []) : [];
+    return lista.filter(c => c && c.store === ME.store && c.activo !== false);
+  } catch (e) { return []; }
+}
+
 /** Los carros de la tienda y dónde quedó el cuentakilómetros de cada uno. */
 async function carrosDeTienda() {
+  const oficiales = await carrosOficiales();
+  window.__carrosOficiales = oficiales.length > 0;
   const snap = await db.collection('Registros').where('store','==',ME.store).get();
   const regs = snap.docs.map(d => d.data())
     .sort((a,b) => String(b.date).localeCompare(String(a.date))
@@ -335,6 +351,12 @@ async function carrosDeTienda() {
     if (!(v in carros)) carros[v] = null;
     if (carros[v] === null && r.status === 'completado' && r.kmLlegada) carros[v] = r.kmLlegada;
   });
+  // Si la gerencia armó la lista, sólo se ofrecen esos carros.
+  if (oficiales.length) {
+    const solo = {};
+    oficiales.forEach(c => { const n = etiquetaCarro(c); solo[n] = n in carros ? carros[n] : null; });
+    return solo;
+  }
   return carros;   // { 'Toyota blanco': 45230.5, ... }
 }
 

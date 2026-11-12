@@ -646,7 +646,7 @@ function abrirSalida() {
     <label class="lbl">Carro</label>
     ${hayCarros ? `
       <select id="viajeCarro" onchange="precargarKm()">${opcionesCarro(carros)}
-        <option value="__otro__">Otro carro...</option></select>
+        ${window.__carrosOficiales ? '' : '<option value="__otro__">Otro carro...</option>'}</select>
       <input type="text" id="viajeCarroNuevo" placeholder="Nombre del carro" style="display:none;margin-top:8px">`
     : `<input type="text" id="viajeCarroNuevo" placeholder="Ej: Toyota blanco">`}
 
