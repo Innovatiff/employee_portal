@@ -157,14 +157,14 @@ async function loadSession(user) {
   // Colaboradores/{uid} es lo que el SFM creó al contratar.
   const link = await db.collection('Colaboradores').doc(user.uid).get();
   if (!link.exists) {
-    throw new Error('Esta cuenta no está vinculada a ningún colaborador. Pídele a tu SFM que revise tu alta.');
+    throw Object.assign(new Error('Esta cuenta no está vinculada a ningún colaborador. Pídele a tu SFM que revise tu alta.'), { cuenta: true });
   }
   const empId = link.data().employeeId;
   const doc   = await db.collection('Employees').doc(empId).get();
-  if (!doc.exists) throw new Error('No encontramos tu ficha. Habla con tu SFM.');
+  if (!doc.exists) throw Object.assign(new Error('No encontramos tu ficha. Habla con tu SFM.'), { cuenta: true });
 
   const e = doc.data();
-  if (e.status !== 'active') throw new Error('Tu cuenta está inactiva. Habla con tu SFM.');
+  if (e.status !== 'active') throw Object.assign(new Error('Tu cuenta está inactiva. Habla con tu SFM.'), { cuenta: true });
 
   let jobTitle = '—';
   if (e.jobId) {
@@ -420,7 +420,8 @@ async function miHorario(lunes) {
   const data = doc.exists ? doc.data() : {};
   const mios = (data.shifts || {})[ME.employeeId] || {};
   const aplicado = (data.fijados || []).indexOf(ME.employeeId) >= 0;
-  if (aplicado || Object.keys(mios).length || !fj.exists) return mios;
+  // Igual que el escritorio: el fijo nunca se aplica a semanas pasadas.
+  if (aplicado || Object.keys(mios).length || !fj.exists || lunes < lunesDe(new Date())) return mios;
 
   // Semana sin llenar: proyectar el fijo sobre las fechas (0 = lunes)
   const turnos = fj.data().turnos || {};
@@ -601,7 +602,7 @@ async function sendMessage(chatId, text) {
 // Se ordena en el cliente para no exigir índices compuestos.
 function listenMessages(chatId, cb) {
   return db.collection('Messages').where('chatId','==',chatId)
-    .onSnapshot(s => cb(s.docs.map(d=>({id:d.id,...d.data()}))
+    .onSnapshot(s => cb(s.docs.map(d=>({id:d.id,...d.data({ serverTimestamps:'estimate' })}))
       .sort((a,b) => (a.createdAt?.toMillis?.()||0) - (b.createdAt?.toMillis?.()||0))),
       e => console.error('listenMessages', e));
 }

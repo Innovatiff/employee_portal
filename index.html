@@ -195,6 +195,18 @@ auth.onAuthStateChanged(async user => {
     setupPush();
     go('inicio');
   } catch (err) {
+    // Sólo se cierra la sesión si la cuenta de verdad no sirve. Un fallo de
+    // red al abrir no debe sacar a nadie: se avisa y se puede reintentar.
+    if (!err.cuenta) {
+      console.error('inicio', err);
+      document.getElementById('loginScreen').style.display = '';
+      loginErr('Sin conexión. Revisa tu internet y vuelve a abrir la app.');
+      const b = document.getElementById('loginBtn');
+      b.disabled = false;
+      b.innerHTML = '<ion-icon name="refresh-outline"></ion-icon> Reintentar';
+      b.onclick = () => location.reload();
+      return;
+    }
     await auth.signOut();
     document.getElementById('loginScreen').style.display = '';
     loginErr(err.message);
@@ -238,6 +250,10 @@ function go(tab) {
 }
 
 const el = () => document.getElementById('view');
+// Una vista lenta que termina cuando la persona ya cambió de pestaña no
+// debe pintar encima de la pestaña nueva: se corta con este centinela.
+const VISTA_VIEJA = { viejo: true };
+function vista(tab) { if (TAB !== tab) throw VISTA_VIEJA; return el(); }
 const loading = (n=3) => el().innerHTML = '<div class="skel-card"></div>'.repeat(n);
 
 // ══════════ Inicio ══════════
@@ -300,7 +316,7 @@ async function vInicio() {
         }).join('')}
       </div>`;
 
-    el().innerHTML = `
+    vista('inicio').innerHTML = `
       <div style="margin-bottom:16px">
         <div style="font-size:24px;font-weight:800;letter-spacing:-.04em">Hola, ${esc((ME.name||'').split(' ')[0])}</div>
         <div style="font-size:13.5px;color:var(--muted);margin-top:2px">${esc(ME.jobTitle)} · ${storeName(ME.store)}</div>
@@ -424,7 +440,7 @@ async function vReportes() {
   loading(2);
   try {
     const lista = await misReportes();
-    el().innerHTML = `
+    vista('reportes').innerHTML = `
       <button class="btn btn-primary btn-block" onclick="abrirReporte()" style="margin-bottom:16px">
         <ion-icon name="warning-outline"></ion-icon> Reportar incidente
       </button>
@@ -438,7 +454,7 @@ async function vReportes() {
             <span style="margin-left:auto;font-size:12px;color:var(--light)">${fDate(r.date)}</span>
           </div>
           <p style="margin:9px 0 0;font-size:14px;line-height:1.55;white-space:pre-wrap">${esc(r.texto||'')}</p>
-          ${r.foto ? `<img src="${r.foto}" alt="Foto" loading="lazy" onclick="verFoto('${r.foto}')"
+          ${r.foto ? `<img src="${esc(r.foto)}" alt="Foto" loading="lazy" onclick="verFoto(this.src)"
             style="margin-top:10px;width:100%;max-width:260px;border-radius:10px;border:1px solid var(--line);aspect-ratio:${(r.w||4)}/${(r.h||3)};object-fit:cover">` : ''}
         </div>`).join('')
       : `<div class="card"><div class="empty"><ion-icon name="shield-checkmark-outline"></ion-icon>
@@ -505,9 +521,9 @@ async function vHorario() {
       const [h1,m1]=t.in.split(':').map(Number), [h2,m2]=t.out.split(':').map(Number);
       return Math.max(0,(h2*60+m2-h1*60-m1)/60);
     };
-    const total = dias.reduce((s,f) => s + horasDe(agenda[f]), 0);
+    const total = dias.reduce((s,f) => s + (conPermiso(f) ? 0 : horasDe(agenda[f])), 0);
 
-    el().innerHTML = `
+    vista('horario').innerHTML = `
       <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:10px">
         <button class="btn btn-ghost btn-sm" onclick="moverSemanaH(-1)" aria-label="Semana anterior">
           <ion-icon name="chevron-back-outline"></ion-icon></button>
@@ -620,7 +636,7 @@ async function vRegistros() {
       </div>`;
     }).join('') : `<div class="empty"><ion-icon name="car-outline"></ion-icon><p>Todavía no tienes viajes.</p></div>`;
 
-    el().innerHTML = `
+    vista('registros').innerHTML = `
       ${accion}
       <div class="section-t" style="margin-top:18px">Mis viajes</div>
       <div class="card">${lista}</div>`;
@@ -714,6 +730,8 @@ async function confirmarSalida() {
   if (!carro) { toast('Escribe qué carro llevas.', 'err'); return; }
   if (isNaN(km) || km < 0) { toast('Escribe el kilometraje del tablero.', 'err'); return; }
   if (!hora) { toast('Escribe la hora de salida.', 'err'); return; }
+  if (window.__saliendo) return;      // doble toque: un solo viaje
+  window.__saliendo = true;
   try {
     await salirDeViaje(carro, km, hora);
     localStorage.setItem('elaguila_carro', carro);
@@ -722,7 +740,7 @@ async function confirmarSalida() {
     vRegistros();
   } catch (err) {
     toast('No se pudo guardar: ' + err.message, 'err');
-  }
+  } finally { window.__saliendo = false; }
 }
 
 function abrirLlegada() {
@@ -767,6 +785,7 @@ async function confirmarLlegada() {
 }
 
 function errView(err) {
+  if (err === VISTA_VIEJA) return;
   console.error(err);
   el().innerHTML = `<div class="card"><div class="empty">
     <ion-icon name="warning-outline"></ion-icon>
@@ -789,7 +808,7 @@ async function vHoras() {
     cis.forEach(c => { (porDia[c.date] = porDia[c.date] || []).push(c); });
     const fechas = Object.keys(porDia).sort().reverse();
 
-    el().innerHTML = `
+    vista('horas').innerHTML = `
       <div class="pernav">
         <button onclick="horasIdx--;vHoras()"><ion-icon name="chevron-back-outline"></ion-icon></button>
         <div class="lbl"><b>${perLabel(p)}</b>
@@ -858,7 +877,8 @@ async function revisarRecibos() {
     // La primera vez no se avisa de todo el historial de golpe: se dan por
     // vistos los que ya existían y sólo se avisa de lo que llegue después.
     if (!localStorage.getItem(RECIBOS_VISTOS)) {
-      marcarRecibosVistos(list.map(s => s.id));
+      window._recibos = list;
+    marcarRecibosVistos(list.map(s => s.id));
       return;
     }
     if (nuevos.length) {
@@ -878,7 +898,7 @@ async function vPagos() {
     const pagado   = list.filter(s=>s.status==='paid');
     const totalAno = pagado.reduce((s,x)=>s+(x.gross||0),0);
 
-    el().innerHTML = `
+    vista('pagos').innerHTML = `
       <div class="kpis" style="grid-template-columns:repeat(2,1fr)">
         <div class="kpi"><div class="kpi-ico ico-g"><ion-icon name="checkmark-circle-outline"></ion-icon></div>
           <div class="kpi-l">Recibido</div><div class="kpi-v" style="font-size:19px">${money(totalAno)}</div></div>
@@ -893,7 +913,7 @@ async function vPagos() {
              <p>Todavía no tienes recibos.<br><span style="font-size:12.5px">Aparecerán cuando tu SFM cierre el período.</span></p></div></div>`
         : `<div class="card">${list.map(s => {
             const pagado = s.status === 'paid';
-            return `<div class="row row-link" onclick='verRecibo(${JSON.stringify(JSON.stringify(s))})'>
+            return `<div class="row row-link" onclick="verRecibo('${esc(s.id)}')">
               <div class="row-main">
                 <div class="row-t">${fDateShort(s.periodStart)} – ${fDate(s.periodEnd)}</div>
                 <div class="row-s">${(s.hours||0).toFixed(2)} h · ${money(s.rate)}/h</div>
@@ -908,8 +928,9 @@ async function vPagos() {
   } catch (err) { errView(err); }
 }
 
-function verRecibo(json) {
-  const s = JSON.parse(json);
+function verRecibo(id) {
+  const s = (window._recibos || []).find(x => x.id === id);
+  if (!s) return;
   const pagado = s.status === 'paid';
   openSheet(`
     <h3>Recibo de pago</h3>
@@ -927,7 +948,7 @@ function verRecibo(json) {
         ${s.paidDate ? `<div class="row-s">Pagado el ${fDate(s.paidDate)}</div>` : ''}</div>
         <span class="badge ${pagado?'b-green':'b-amber'}">${pagado?'Pagado':'Pendiente'}</span></div>
     </div>
-    <button class="btn btn-primary btn-block" onclick='closeSheet();abrirComprobante(${JSON.stringify(json)})' style="margin-bottom:9px">
+    <button class="btn btn-primary btn-block" onclick="closeSheet();abrirComprobante('${esc(s.id)}')" style="margin-bottom:9px">
       <ion-icon name="document-text-outline"></ion-icon> Ver comprobante
     </button>
     <button class="btn btn-ghost btn-block" onclick="closeSheet()">Cerrar</button>`);
@@ -940,8 +961,9 @@ function verRecibo(json) {
 // lo que tiene el SFM. El botón de descarga abre el diálogo de
 // impresión del sistema, que en teléfono ofrece "Guardar en Archivos" como
 // PDF y en computadora "Guardar como PDF".
-function abrirComprobante(json) {
-  const s = JSON.parse(json);
+function abrirComprobante(id) {
+  const s = (window._recibos || []).find(x => x.id === id);
+  if (!s) return;
   const pagado = s.status === 'paid';
   const folio  = (s.id || '').slice(-6).toUpperCase() || '——————';
   const bruto  = Number(s.gross || 0);
@@ -1014,7 +1036,7 @@ async function vPermisos() {
   loading(2);
   try {
     const list = await myTimeOff();
-    el().innerHTML = `
+    vista('permisos').innerHTML = `
       <button class="btn btn-primary btn-block" onclick="openPermisoSheet()" style="margin-bottom:16px">
         <ion-icon name="add-outline"></ion-icon> Solicitar permiso
       </button>
@@ -1029,7 +1051,7 @@ async function vPermisos() {
             return `<div class="row" style="align-items:flex-start">
               <div class="row-main">
                 <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
-                  <span class="badge ${TO_BADGE[t.type]||'b-gray'}">${TO_TIPO[t.type]||t.type}</span>
+                  <span class="badge ${TO_BADGE[t.type]||'b-gray'}">${esc(TO_TIPO[t.type]||t.type)}</span>
                   <span class="badge ${est.b}">${est.l}</span>
                 </div>
                 <div class="row-t" style="margin-top:7px">${fDateShort(t.startDate)} – ${fDate(t.endDate)}</div>
@@ -1132,7 +1154,7 @@ async function vPedidos() {
             </div>`;
           }).join('')}</div>`;
     }
-    el().innerHTML = `
+    vista('pedidos').innerHTML = `
       <button class="btn btn-primary btn-block" onclick="${pedTab==='tienda' ? 'openPedidoSheet()' : 'nuevoPedidoPersona()'}" style="margin-bottom:14px">
         <ion-icon name="add-outline"></ion-icon> ${pedTab==='tienda' ? 'Nuevo pedido de la tienda' : 'Hacer un pedido a un compañero'}
       </button>
@@ -1166,7 +1188,7 @@ function verPedidoPersona(id) {
          : paraMi ? `<button class="btn btn-primary btn-block" id="aceptarBtn" onclick="aceptarPedido('${p.id}')">
                        <ion-icon name="checkmark-outline"></ion-icon> Aceptar — recibí tu pedido</button>`
                   : `<div class="ped-esp"><ion-icon name="time-outline"></ion-icon> Esperando que ${esc(p.paraName||'')} lo acepte</div>`}
-    <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:10px">Los pedidos enviados no se pueden editar ni borrar.</p>
+    <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:10px">Los pedidos enviados no se pueden editar ni borrar.</p>
     <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:6px">Cerrar</button>`);
 }
 
@@ -1205,7 +1227,7 @@ async function nuevoPedidoPersona() {
         <button class="btn btn-sm btn-ghost" onclick="addItem()"><ion-icon name="add-outline"></ion-icon> Agregar</button></label>
       <div id="items"></div>
     </div>
-    <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px">⚠️ Revisa bien: una vez enviado no se puede editar ni borrar.</p>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:12px">⚠️ Revisa bien: una vez enviado no se puede editar ni borrar.</p>
     <button class="btn btn-primary btn-block" id="pedBtn" onclick="enviarPedidoAComp()">
       <ion-icon name="paper-plane-outline"></ion-icon> Enviar pedido</button>
     <button class="btn btn-ghost btn-block" onclick="closeSheet()" style="margin-top:9px">Cancelar</button>`);
@@ -1287,7 +1309,7 @@ function openPedidoSheet(id) {
 function addItem(it) {
   const v = it || { name:'', qty:'', unit:'', note:'' };
   document.getElementById('items').insertAdjacentHTML('beforeend',
-    `<div class="item-row">
+    `<div class="item-row" data-unit="${esc(v.unit||'')}" data-note="${esc(v.note||'')}">
       <input type="text" class="i-n" value="${esc(v.name)}" placeholder="Artículo">
       <input type="text" class="i-q" value="${esc(v.qty)}" placeholder="Cant.">
       <button class="del" onclick="this.parentNode.remove()"><ion-icon name="close-outline"></ion-icon></button>
@@ -1299,7 +1321,8 @@ async function guardarPedido() {
   if (!title) { toast('Ponle un título.', 'err'); return; }
   const items = [...document.querySelectorAll('#items .item-row')].map(r => ({
     name: r.querySelector('.i-n').value.trim(),
-    qty:  r.querySelector('.i-q').value.trim(), unit:'', note:''
+    qty:  r.querySelector('.i-q').value.trim(),
+    unit: r.dataset.unit || '', note: r.dataset.note || ''
   })).filter(i => i.name);
   if (!items.length) { toast('Agrega al menos un artículo.', 'err'); return; }
 
@@ -1400,6 +1423,7 @@ async function vGrupo() {
 }
 
 function paintConvs() {
+  if (TAB !== 'grupo') return;
   const a = chatMeta[anunciosId()] || {};
   const pend = {}; sinLeer(Object.values(chatMeta)).forEach(c => pend[c.id] = true);
   const punto = id => pend[id] ? '<span class="conv-dot"></span>' : '';
@@ -1474,7 +1498,8 @@ async function openDm(pid) {
 }
 
 async function openTienda() {
-  await ensureTienda();
+  try { await ensureTienda(); }
+  catch (err) { toast('No se pudo abrir el chat: ' + err.message, 'err'); return; }
   activeChat = { id:'tienda_'+ME.store, type:'tienda',
                  title:'Chat de ' + storeShort(ME.store), sub:'Toda la tienda' };
   mountThread();
@@ -1562,14 +1587,14 @@ function paintMsgs(list) {
         <div class="anuncio-h">${avatar(m.senderName,22)}<b>${esc(m.senderName)}</b>
           <time>${fTime(d)}</time></div>
         <div class="anuncio-b">${m.type === 'image'
-          ? `<img class="anuncio-foto" src="${m.url}" alt="Foto" loading="lazy" onclick="verFoto('${m.url}')">`
+          ? `<img class="anuncio-foto" src="${esc(m.url)}" alt="Foto" loading="lazy" onclick="verFoto(this.src)">`
           : esc(m.text).replace(/\n/g,'<br>')}</div>
         <div class="anuncio-rx">${rxPills(m)}${rxUi(m)}</div></div>`;
     } else {
       const burbuja = `<div class="bub ${m.type==='image'?'bub-foto':''}">
         ${m.type === 'image'
-          ? `<img src="${m.url}" alt="Foto" loading="lazy"
-                  style="aspect-ratio:${(m.w||4)}/${(m.h||3)}" onclick="verFoto('${m.url}')">`
+          ? `<img src="${esc(m.url)}" alt="Foto" loading="lazy"
+                  style="aspect-ratio:${(Number(m.w)||4)}/${(Number(m.h)||3)}" onclick="verFoto(this.src)">`
           : `<div class="txt">${esc(m.text).replace(/\n/g,'<br>')}</div>`}
         <div class="at">${fTime(d)}</div></div>`;
       html += `<div class="bub-row ${mio?'me':''} ${seguido?'seguido':''} ${ultimo?'ultimo':''}">
@@ -1769,7 +1794,7 @@ async function guardarPass() {
     toast('Contraseña actualizada', 'ok');
   } catch (err) {
     b.disabled = false; b.textContent = 'Guardar';
-    toast(err.code === 'auth/wrong-password'
+    toast((err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential')
       ? 'La contraseña actual no es correcta.' : err.message, 'err');
   }
 }
